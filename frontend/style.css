@@ -1,1 +1,23 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+}
 
+input, textarea, button {
+  display: block;
+  margin: 10px 0;
+  padding: 8px;
+  width: 100%;
+}
+
+button {
+  cursor: pointer;
+}
+
+.promo-card {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px 0;
+}
