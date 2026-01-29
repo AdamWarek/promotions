@@ -1,116 +1,46 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Polska Technologia – Agregator RSS</title>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #e5e7eb;
-}
-
-header {
-  padding: 15px;
-  text-align: center;
-  background: #020617;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
-  padding: 15px;
-}
-
-.card {
-  background: #020617;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.card h2 {
-  font-size: 16px;
-  margin-bottom: 8px;
-  color: #38bdf8;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  margin-bottom: 6px;
-}
-
-a {
-  color: #e5e7eb;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-a:hover {
-  text-decoration: underline;
-  color: #38bdf8;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Promotions Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
-
 <body>
+  <h1>Promotions Hub</h1>
 
-<header>
-  🇵🇱 Najpopularniejsze Serwisy Technologiczne – RSS
-</header>
+  <!-- Authentication -->
+  <div id="auth-section">
+    <h2>Sign Up</h2>
+    <input type="email" id="signup-email" placeholder="Email">
+    <input type="password" id="signup-password" placeholder="Password">
+    <button onclick="handleSignUp()">Sign Up</button>
 
-<div class="container" id="feeds"></div>
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="handleLogin()">Login</button>
 
-<script>
-const feeds = [
-  { name: "Benchmark", url: "https://www.benchmark.pl/rss/aktualnosci.xml" },
-  { name: "Spider's Web", url: "https://spidersweb.pl/feed" },
-  { name: "Antyweb", url: "https://antyweb.pl/feed" },
-  { name: "Komputer Świat", url: "https://www.komputerswiat.pl/rss" },
-  { name: "ITBiznes", url: "https://itbiznes.pl/feed" },
-  { name: "PurePC", url: "https://www.purepc.pl/rss.xml" }
-];
+    <button onclick="handleLogout()">Logout</button>
+    <p id="auth-message"></p>
+  </div>
 
-const container = document.getElementById("feeds");
+  <!-- Promotion Submission -->
+  <div id="promotion-section" style="display:none;">
+    <h2>Submit a Promotion</h2>
+    <input type="text" id="promo-title" placeholder="Title">
+    <input type="text" id="promo-link" placeholder="Link">
+    <input type="text" id="promo-category" placeholder="Category">
+    <textarea id="promo-desc" placeholder="Description"></textarea>
+    <button onclick="submitPromotion()">Submit Promotion</button>
+  </div>
 
-feeds.forEach(feed => {
-  fetch(`https://api.rss2json.com/v1/api.json?rss_url=${feed.url}`)
-    .then(res => res.json())
-    .then(data => {
-      const card = document.createElement("div");
-      card.className = "card";
+  <!-- Promotion Feed -->
+  <div id="promotions-container">
+    <h2>Latest Promotions</h2>
+    <div id="feed"></div>
+  </div>
 
-      const title = document.createElement("h2");
-      title.textContent = feed.name;
-      card.appendChild(title);
-
-      const list = document.createElement("ul");
-
-      data.items.slice(0, 8).forEach(item => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = item.link;
-        a.target = "_blank";
-        a.textContent = item.title;
-        li.appendChild(a);
-        list.appendChild(li);
-      });
-
-      card.appendChild(list);
-      container.appendChild(card);
-    })
-    .catch(err => console.error("RSS error:", err));
-});
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
