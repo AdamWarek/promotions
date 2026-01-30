@@ -1,142 +1,127 @@
-// Supabase config
 const SUPABASE_URL = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';
 
-// Initialize Supabase
-// FIX: Renamed variable to 'supabaseClient' to avoid conflict with the global 'supabase' library object
+// Renamed to avoid collision with global 'supabase' library object
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
-  const authForm = document.getElementById('authForm');
+  const authSection = document.getElementById('authSection');
+  const promoSection = document.getElementById('promoSection');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
-  const signupBtn = document.getElementById('signupBtn');
-  const loginBtn = document.getElementById('loginBtn');
   const messageDiv = document.getElementById('message');
-
-  const promoSection = document.getElementById('promoSection');
-  const addPromoForm = document.getElementById('addPromoForm');
-  const promoTitle = document.getElementById('promoTitle');
-  const promoDesc = document.getElementById('promoDesc');
-  const promotionsList = document.getElementById('promotionsList');
+  const userDisplay = document.getElementById('userDisplay');
 
   let currentUser = null;
 
-  // ----------------- SIGNUP -----------------
-  signupBtn.addEventListener('click', async (e) => {
-    e.preventDefault(); // Prevent form submit if button is inside form
-    messageDiv.textContent = 'Signing up...';
+  // UI Helper to switch views
+  function updateUI(user) {
+    currentUser = user;
+    if (user) {
+      authSection.style.display = 'none';
+      promoSection.style.display = 'block';
+      userDisplay.textContent = `Logged in as: ${user.email}`;
+      loadPromotions();
+    } else {
+      authSection.style.display = 'block';
+      promoSection.style.display = 'none';
+      messageDiv.textContent = '';
+    }
+  }
+
+  // Check for existing session on load
+  supabaseClient.auth.getSession().then(({ data }) => {
+    if (data.session) updateUI(data.session.user);
+  });
+
+  // SIGNUP
+  document.getElementById('signupBtn').addEventListener('click', async () => {
+    messageDiv.textContent = 'Creating account...';
     try {
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      if (!email || !password) throw new Error('Email and password required');
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: emailInput.value,
+        password: passwordInput.value,
+      });
 
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
       if (error) throw error;
-
-      messageDiv.textContent = 'Signup successful! Please check email or login.';
-      messageDiv.style.color = 'green';
+      
+      // If user is created but not logged in (Email confirmation active)
+      if (data.user && data.session === null) {
+        messageDiv.style.color = 'orange';
+        messageDiv.textContent = 'Signup successful! Check your email for a confirmation link.';
+      } else {
+        updateUI(data.user);
+      }
     } catch (err) {
-      messageDiv.textContent = err.message;
       messageDiv.style.color = 'red';
+      messageDiv.textContent = err.message;
     }
   });
 
-  // ----------------- LOGIN -----------------
-  // Triggered by the Form Submit (Enter key or Login button)
-  authForm.addEventListener('submit', async (e) => {
+  // LOGIN
+  document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     messageDiv.textContent = 'Logging in...';
     try {
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      if (!email || !password) throw new Error('Email and password required');
-
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-
-      currentUser = data.user;
-
-      messageDiv.textContent = 'Logged in successfully!';
-      messageDiv.style.color = 'green';
-
-      // Hide Auth form, show Promo section
-      authForm.style.display = 'none';
-      promoSection.style.display = 'block';
-
-      loadPromotions();
-    } catch (err) {
-      messageDiv.textContent = err.message;
-      messageDiv.style.color = 'red';
-    }
-  });
-
-  // ----------------- ADD PROMOTION -----------------
-  addPromoForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!promoTitle.value.trim()) return;
-
-    const submitBtn = document.getElementById('addPromoBtn');
-    submitBtn.textContent = 'Adding...';
-    submitBtn.disabled = true;
-
-    try {
-      const { data, error } = await supabaseClient.from('promotions').insert([{
-        user_id: currentUser.id,
-        title: promoTitle.value.trim(),
-        description: promoDesc.value.trim()
-      }]);
-      
-      if (error) throw error;
-
-      promoTitle.value = '';
-      promoDesc.value = '';
-      loadPromotions();
-    } catch (err) {
-      alert('Error adding promotion: ' + err.message);
-    } finally {
-      submitBtn.textContent = 'Add Promotion';
-      submitBtn.disabled = false;
-    }
-  });
-
-  // ----------------- LOAD PROMOTIONS -----------------
-  async function loadPromotions() {
-    promotionsList.innerHTML = 'Loading...';
-    try {
-      const { data, error } = await supabaseClient
-        .from('promotions')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-
-      promotionsList.innerHTML = '';
-      
-      if (data.length === 0) {
-        promotionsList.innerHTML = '<p style="text-align:center; color:#666;">No promotions found.</p>';
-        return;
-      }
-
-      data.forEach(promo => {
-        const div = document.createElement('div');
-        div.className = 'promotion';
-        
-        // SECURITY FIX: Use textContent to prevent XSS attacks
-        const titleEl = document.createElement('strong');
-        titleEl.textContent = promo.title;
-        
-        const descEl = document.createElement('p');
-        descEl.textContent = promo.description || '';
-
-        div.appendChild(titleEl);
-        div.appendChild(descEl);
-        promotionsList.appendChild(div);
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: emailInput.value,
+        password: passwordInput.value,
       });
+      if (error) throw error;
+      updateUI(data.user);
     } catch (err) {
-      promotionsList.innerHTML = '<span style="color:red">Error loading promotions</span>';
-      console.error(err);
+      messageDiv.style.color = 'red';
+      messageDiv.textContent = err.message;
     }
+  });
+
+  // LOGOUT
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    updateUI(null);
+  });
+
+  // ADD PROMOTION
+  document.getElementById('addPromoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('promoTitle').value;
+    const desc = document.getElementById('promoDesc').value;
+
+    try {
+      const { error } = await supabaseClient.from('promotions').insert([
+        { title, description: desc, user_id: currentUser.id }
+      ]);
+      if (error) throw error;
+      
+      document.getElementById('addPromoForm').reset();
+      loadPromotions();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  // LOAD PROMOTIONS
+  async function loadPromotions() {
+    const list = document.getElementById('promotionsList');
+    list.innerHTML = 'Loading...';
+    const { data, error } = await supabaseClient
+      .from('promotions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      list.textContent = 'Failed to load.';
+      return;
+    }
+
+    list.innerHTML = '';
+    data.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'promotion';
+      div.innerHTML = `<strong></strong><p></p>`;
+      div.querySelector('strong').textContent = p.title;
+      div.querySelector('p').textContent = p.description;
+      list.appendChild(div);
+    });
   }
 });

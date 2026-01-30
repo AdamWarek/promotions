@@ -11,18 +11,24 @@
 <div class="box">
   <h2>Promotions Hub</h2>
   
-  <form id="authForm">
-    <input id="email" type="email" placeholder="Email" required>
-    <input id="password" type="password" placeholder="Password" required>
-    <div class="btn-group">
-      <button type="button" id="signupBtn">Sign up</button>
-      <button type="submit" id="loginBtn">Login</button>
-    </div>
-  </form>
-  
+  <div id="authSection">
+    <form id="authForm">
+      <input id="email" type="email" placeholder="Email" required autocomplete="email">
+      <input id="password" type="password" placeholder="Password" required autocomplete="current-password">
+      <div class="btn-group">
+        <button type="button" id="signupBtn">Sign up</button>
+        <button type="submit" id="loginBtn">Login</button>
+      </div>
+    </form>
+  </div>
+
   <div id="message"></div>
 
   <div id="promoSection" style="display:none;">
+    <div class="user-info">
+      <span id="userDisplay"></span>
+      <button id="logoutBtn" class="small-btn">Logout</button>
+    </div>
     <hr>
     <h3>Add Promotion</h3>
     <form id="addPromoForm">
