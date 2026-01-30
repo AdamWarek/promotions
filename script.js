@@ -1,12 +1,11 @@
-// 🔴 REPLACE WITH YOUR SUPABASE DETAILS
+// Supabase config
 const SUPABASE_URL = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';
 
-// Supabase client
+// Initialize Supabase
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const signupBtn = document.getElementById('signupBtn');
@@ -21,15 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentUser = null;
 
-  // ----------------- AUTH -----------------
+  // ----------------- SIGNUP -----------------
   signupBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Signing up...';
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: emailInput.value,
-        password: passwordInput.value
-      });
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) throw new Error('Email and password required');
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
+
       messageDiv.textContent = 'Signup successful! Please login.';
       messageDiv.style.color = 'green';
     } catch (err) {
@@ -38,25 +39,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ----------------- LOGIN -----------------
   loginBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Logging in...';
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailInput.value,
-        password: passwordInput.value
-      });
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) throw new Error('Email and password required');
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
       currentUser = data.user;
+
       messageDiv.textContent = 'Logged in successfully!';
       messageDiv.style.color = 'green';
 
-      // Show promotions section
-      promoSection.style.display = 'block';
       emailInput.style.display = 'none';
       passwordInput.style.display = 'none';
       signupBtn.style.display = 'none';
       loginBtn.style.display = 'none';
+      promoSection.style.display = 'block';
 
       loadPromotions();
     } catch (err) {
@@ -67,13 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ----------------- ADD PROMOTION -----------------
   addPromoBtn.addEventListener('click', async () => {
-    if (!promoTitle.value) return;
+    if (!promoTitle.value.trim()) return;
 
     try {
       const { data, error } = await supabase.from('promotions').insert([{
         user_id: currentUser.id,
-        title: promoTitle.value,
-        description: promoDesc.value
+        title: promoTitle.value.trim(),
+        description: promoDesc.value.trim()
       }]);
       if (error) throw error;
 
@@ -93,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .select('*')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
 
       promotionsList.innerHTML = '';
