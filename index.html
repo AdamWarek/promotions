@@ -1,36 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Promotions Hub</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body { font-family: Arial; background: #f4f4f4; padding: 20px; }
-.box { background: #fff; padding: 20px; max-width: 400px; margin: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-input, textarea { width: 100%; padding: 10px; margin-top: 10px; box-sizing: border-box; }
-button { width: 100%; padding: 10px; margin-top: 10px; cursor: pointer; }
-#message { margin-top: 15px; font-weight: bold; text-align: center; }
-.promotion { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Promotions Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="box">
-<h2>Promotions Hub</h2>
-<input id="email" type="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button id="signupBtn">Sign up</button>
-<button id="loginBtn">Login</button>
-<div id="message"></div>
+  <h2>Promotions Hub</h2>
+  
+  <form id="authForm">
+    <input id="email" type="email" placeholder="Email" required>
+    <input id="password" type="password" placeholder="Password" required>
+    <div class="btn-group">
+      <button type="button" id="signupBtn">Sign up</button>
+      <button type="submit" id="loginBtn">Login</button>
+    </div>
+  </form>
+  
+  <div id="message"></div>
 
-<div id="promoSection" style="display:none;">
-<input id="promoTitle" type="text" placeholder="Promotion title">
-<textarea id="promoDesc" placeholder="Promotion description"></textarea>
-<button id="addPromoBtn">Add Promotion</button>
+  <div id="promoSection" style="display:none;">
+    <hr>
+    <h3>Add Promotion</h3>
+    <form id="addPromoForm">
+      <input id="promoTitle" type="text" placeholder="Promotion title" required>
+      <textarea id="promoDesc" placeholder="Promotion description"></textarea>
+      <button type="submit" id="addPromoBtn">Add Promotion</button>
+    </form>
 
-<h3>Your Promotions</h3>
-<div id="promotionsList"></div>
-</div>
+    <h3>Your Promotions</h3>
+    <div id="promotionsList"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
