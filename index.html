@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Promotions</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Promotions Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Prevent favicon 404 -->
+  <!-- Favicon to avoid 404 -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -52,23 +52,24 @@
 <body>
 
   <div class="box">
-    <h2>Promotions</h2>
+    <h2>Promotions Hub</h2>
 
-    <!-- ✅ IDs MUST MATCH script.js EXACTLY -->
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
+    <!-- Auth Inputs -->
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
 
+    <!-- Auth Buttons -->
     <button id="signupBtn">Sign up</button>
     <button id="loginBtn">Login</button>
 
+    <!-- Message display -->
     <div id="message"></div>
   </div>
 
-  <!-- ✅ Supabase v2 browser build (WORKING CDN) -->
+  <!-- Supabase v2 browser build -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- ✅ Your JS (must be AFTER Supabase) -->
+  <!-- Your custom JS -->
   <script src="script.js"></script>
-
 </body>
 </html>

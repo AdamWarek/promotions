@@ -1,4 +1,4 @@
-// 🔴 REPLACE WITH YOUR REAL VALUES
+// 🔴 REPLACE THESE WITH YOUR SUPABASE DETAILS
 const SUPABASE_URL = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';
 
@@ -8,7 +8,7 @@ const supabase = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
-// ✅ Wait until HTML is fully loaded
+// ✅ Wait for DOM to load
 document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
@@ -17,45 +17,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const signupBtn = document.getElementById('signupBtn');
   const loginBtn = document.getElementById('loginBtn');
 
-  // 🛑 Safety check (important for debugging)
+  // Safety check
   if (!emailInput || !passwordInput || !signupBtn || !loginBtn) {
     console.error('One or more DOM elements not found');
     return;
   }
 
-  // ✅ Sign up
+  // ✅ Sign up handler
   signupBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Signing up...';
+    messageDiv.style.color = 'black';
 
-    const { error } = await supabase.auth.signUp({
-      email: emailInput.value,
-      password: passwordInput.value
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: emailInput.value,
+        password: passwordInput.value
+      });
 
-    if (error) {
-      messageDiv.textContent = error.message;
+      if (error) {
+        messageDiv.textContent = error.message;
+        messageDiv.style.color = 'red';
+      } else {
+        messageDiv.textContent = 'Signup successful! Check your email.';
+        messageDiv.style.color = 'green';
+      }
+    } catch (err) {
+      messageDiv.textContent = err.message;
       messageDiv.style.color = 'red';
-    } else {
-      messageDiv.textContent = 'Signup successful! Check your email.';
-      messageDiv.style.color = 'green';
     }
   });
 
-  // ✅ Login
+  // ✅ Login handler
   loginBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Logging in...';
+    messageDiv.style.color = 'black';
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailInput.value,
-      password: passwordInput.value
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailInput.value,
+        password: passwordInput.value
+      });
 
-    if (error) {
-      messageDiv.textContent = error.message;
+      if (error) {
+        messageDiv.textContent = error.message;
+        messageDiv.style.color = 'red';
+      } else {
+        messageDiv.textContent = 'Logged in successfully!';
+        messageDiv.style.color = 'green';
+      }
+    } catch (err) {
+      messageDiv.textContent = err.message;
       messageDiv.style.color = 'red';
-    } else {
-      messageDiv.textContent = 'Logged in successfully!';
-      messageDiv.style.color = 'green';
     }
   });
 });
