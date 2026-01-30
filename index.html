@@ -1,48 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Promotions Hub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Promotions Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="box">
-  <h2>Promotions Hub</h2>
-  
-  <div id="authSection">
-    <form id="authForm">
-      <input id="email" type="email" placeholder="Email" required autocomplete="email">
-      <input id="password" type="password" placeholder="Password" required autocomplete="current-password">
-      <div class="btn-group">
-        <button type="button" id="signupBtn">Sign up</button>
-        <button type="submit" id="loginBtn">Login</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="message"></div>
-
-  <div id="promoSection" style="display:none;">
-    <div class="user-info">
-      <span id="userDisplay"></span>
-      <button id="logoutBtn" class="small-btn">Logout</button>
+    <h2 id="appTitle">Promotions Hub</h2>
+    
+    <div id="authSection">
+        <div class="input-group">
+            <input id="email" type="email" placeholder="Email" required>
+            <input id="password" type="password" placeholder="Password" required>
+        </div>
+        <div class="btn-group">
+            <button id="signupBtn" class="secondary">Sign Up</button>
+            <button id="loginBtn">Login</button>
+        </div>
     </div>
-    <hr>
-    <h3>Add Promotion</h3>
-    <form id="addPromoForm">
-      <input id="promoTitle" type="text" placeholder="Promotion title" required>
-      <textarea id="promoDesc" placeholder="Promotion description"></textarea>
-      <button type="submit" id="addPromoBtn">Add Promotion</button>
-    </form>
 
-    <h3>Your Promotions</h3>
-    <div id="promotionsList"></div>
-  </div>
+    <div id="message"></div>
+
+    <div id="promoSection" style="display:none;">
+        <div class="user-header">
+            <span id="userDisplay"></span>
+            <button id="logoutBtn">Logout</button>
+        </div>
+        <hr>
+        <div class="promo-form">
+            <input id="promoTitle" type="text" placeholder="Deal Title (e.g. 50% Off)">
+            <textarea id="promoDesc" placeholder="Deal Details..."></textarea>
+            <button id="addPromoBtn">Post Promotion</button>
+        </div>
+
+        <h3>Active Promotions</h3>
+        <div id="promotionsList"></div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>

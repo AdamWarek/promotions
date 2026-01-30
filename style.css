@@ -1,11 +1,15 @@
-body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-.box { background: white; padding: 25px; max-width: 450px; margin: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
-button:hover { background: #0056b3; }
-.btn-group { display: flex; gap: 10px; }
-#signupBtn { background: #6c757d; }
-.user-info { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #555; }
-.small-btn { width: auto; padding: 5px 10px; background: #dc3545; }
-.promotion { background: #f9f9f9; padding: 10px; border-bottom: 1px solid #eee; margin-top: 10px; }
-#message { margin-top: 10px; text-align: center; font-size: 14px; }
+:root { --primary: #2563eb; --bg: #f8fafc; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 40px 20px; }
+.box { background: white; width: 100%; max-width: 400px; padding: 2rem; border-radius: 12px; shadow: 0 10px 15px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+h2 { text-align: center; margin-top: 0; color: #1e293b; }
+input, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+button:hover { opacity: 0.9; }
+.secondary { background: #64748b; margin-bottom: 8px; }
+.btn-group { margin-top: 8px; }
+#message { margin: 15px 0; font-size: 14px; text-align: center; font-weight: 500; }
+.user-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 10px; }
+#logoutBtn { width: auto; padding: 4px 10px; background: #ef4444; font-size: 12px; }
+.promo-card { background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--primary); }
+.promo-card strong { color: #1e293b; display: block; }
+.promo-card p { margin: 4px 0 0; color: #475569; font-size: 14px; }
