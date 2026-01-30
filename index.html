@@ -5,35 +5,56 @@
   <title>Promotions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Prevent favicon 404 -->
+  <link rel="icon" href="data:,">
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
       padding: 40px;
     }
+
     .box {
-      background: white;
+      background: #ffffff;
       padding: 20px;
       max-width: 400px;
       margin: auto;
       border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    input, button {
+
+    h2 {
+      text-align: center;
+    }
+
+    input {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
+      box-sizing: border-box;
     }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
     #message {
       margin-top: 15px;
       font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
   <div class="box">
-    <h2>Promotions – Login</h2>
+    <h2>Promotions</h2>
 
+    <!-- ✅ IDs MUST MATCH script.js EXACTLY -->
     <input id="email" type="email" placeholder="Email" />
     <input id="password" type="password" placeholder="Password" />
 
@@ -43,10 +64,10 @@
     <div id="message"></div>
   </div>
 
-  <!-- ✅ Supabase v2 browser build -->
+  <!-- ✅ Supabase v2 browser build (WORKING CDN) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- ✅ Your script -->
+  <!-- ✅ Your JS (must be AFTER Supabase) -->
   <script src="script.js"></script>
 
 </body>
