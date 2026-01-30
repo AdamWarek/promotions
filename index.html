@@ -2,48 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Promotions Hub</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Promotions Hub – Auth Test</title>
 
-  <!-- Supabase JS -->
+  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 
-  <!-- Main script -->
+  <!-- App JS -->
   <script src="script.js" defer></script>
 </head>
 <body>
-  <h1>Promotions Hub</h1>
 
-  <!-- Auth Section -->
-  <div id="auth-section">
-    <h2>Sign Up</h2>
-    <input type="email" id="signup-email" placeholder="Email">
-    <input type="password" id="signup-password" placeholder="Password">
-    <button id="signup-btn">Sign Up</button>
+  <h1>Supabase Auth Test</h1>
 
-    <h2>Login</h2>
-    <input type="email" id="login-email" placeholder="Email">
-    <input type="password" id="login-password" placeholder="Password">
-    <button id="login-btn">Login</button>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
 
-    <button id="logout-btn">Logout</button>
-    <p id="auth-message"></p>
-  </div>
+  <br><br>
 
-  <!-- Promotion Submission -->
-  <div id="promotion-section" style="display:none;">
-    <h2>Submit a Promotion</h2>
-    <input type="text" id="promo-title" placeholder="Title">
-    <input type="text" id="promo-link" placeholder="Link">
-    <input type="text" id="promo-category" placeholder="Category">
-    <textarea id="promo-desc" placeholder="Description"></textarea>
-    <button id="submit-promo-btn">Submit Promotion</button>
-  </div>
+  <button id="signup">Sign Up</button>
+  <button id="login">Login</button>
 
-  <!-- Promotions Feed -->
-  <div id="promotions-container">
-    <h2>Latest Promotions</h2>
-    <div id="feed"></div>
-  </div>
+  <p id="result"></p>
+
 </body>
 </html>
