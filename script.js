@@ -3,12 +3,9 @@ const SUPABASE_URL = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';
 
 // ✅ Create Supabase client
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ✅ Wait for DOM to load
+// ✅ Wait until DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
@@ -23,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // ✅ Sign up handler
+  // ✅ Sign up
   signupBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Signing up...';
     messageDiv.style.color = 'black';
@@ -47,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Login handler
+  // ✅ Login
   loginBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'Logging in...';
     messageDiv.style.color = 'black';
