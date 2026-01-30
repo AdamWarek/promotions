@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <title>Promotions Hub</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Supabase CDN -->
+
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+
   <!-- Main script -->
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
   <h1>Promotions Hub</h1>
 
+  <!-- Auth Section -->
   <div id="auth-section">
     <h2>Sign Up</h2>
     <input type="email" id="signup-email" placeholder="Email">
@@ -27,6 +30,7 @@
     <p id="auth-message"></p>
   </div>
 
+  <!-- Promotion Submission -->
   <div id="promotion-section" style="display:none;">
     <h2>Submit a Promotion</h2>
     <input type="text" id="promo-title" placeholder="Title">
@@ -36,6 +40,7 @@
     <button id="submit-promo-btn">Submit Promotion</button>
   </div>
 
+  <!-- Promotions Feed -->
   <div id="promotions-container">
     <h2>Latest Promotions</h2>
     <div id="feed"></div>

@@ -1,12 +1,12 @@
 // =======================
-// Replace with your Supabase project info
-const supabaseUrl = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';
+// Replace with your Supabase details
+const supabaseUrl = 'https://jlzpqxdaeuqtvbvvaodt.supabase.co';  // Example: https://xyz.supabase.co
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenBxeGRhZXVxdHZidnZhb2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjM1NTYsImV4cCI6MjA4NTI5OTU1Nn0.QC_KZHSX2mrnRzPMP3HJ5h9yX6TOR9FPICknnApE4lQ';      // Example: public anon key
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 // =======================
 
-// Attach functions to window so buttons can access them
-window.addEventListener('DOMContentLoaded', () => {
+// Wait until DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
 
   // Buttons
   const signupBtn = document.getElementById('signup-btn');
@@ -14,12 +14,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const logoutBtn = document.getElementById('logout-btn');
   const submitPromoBtn = document.getElementById('submit-promo-btn');
 
+  // Attach event listeners
   signupBtn.addEventListener('click', handleSignUp);
   loginBtn.addEventListener('click', handleLogin);
   logoutBtn.addEventListener('click', handleLogout);
   submitPromoBtn.addEventListener('click', submitPromotion);
 
-  // Check current auth state
+  // Check if user is logged in on page load
   checkAuth();
   fetchPromotions();
 });
@@ -29,6 +30,7 @@ window.addEventListener('DOMContentLoaded', () => {
 async function handleSignUp() {
   const email = document.getElementById('signup-email').value;
   const password = document.getElementById('signup-password').value;
+
   const { data, error } = await supabase.auth.signUp({ email, password });
   document.getElementById('auth-message').innerText = error ? error.message : 'Sign up successful! Check your email.';
   checkAuth();
@@ -37,6 +39,7 @@ async function handleSignUp() {
 async function handleLogin() {
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   document.getElementById('auth-message').innerText = error ? error.message : 'Logged in successfully!';
   checkAuth();
@@ -49,7 +52,7 @@ async function handleLogout() {
 }
 
 // =======================
-// Check if user is logged in
+// Check auth and toggle promotion section
 async function checkAuth() {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
@@ -60,7 +63,7 @@ async function checkAuth() {
 }
 
 // =======================
-// Submit a promotion
+// Submit promotion
 async function submitPromotion() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) { alert('You must be logged in to submit a promotion.'); return; }
@@ -86,7 +89,7 @@ async function submitPromotion() {
 }
 
 // =======================
-// Fetch promotions from Supabase
+// Fetch promotions feed
 async function fetchPromotions() {
   const { data, error } = await supabase
     .from('promotions')
