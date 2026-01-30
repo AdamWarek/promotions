@@ -1,28 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Promotions Hub – Auth Test</title>
+  <meta charset="UTF-8" />
+  <title>Promotions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-
-  <!-- App JS -->
-  <script src="script.js" defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 40px;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      border-radius: 6px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    #message {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-  <h1>Supabase Auth Test</h1>
+  <div class="box">
+    <h2>Promotions – Login</h2>
 
-  <input id="email" type="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
 
-  <br><br>
+    <button id="signupBtn">Sign up</button>
+    <button id="loginBtn">Login</button>
 
-  <button id="signup">Sign Up</button>
-  <button id="login">Login</button>
+    <div id="message"></div>
+  </div>
 
-  <p id="result"></p>
+  <!-- ✅ Supabase v2 browser build -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <!-- ✅ Your script -->
+  <script src="script.js"></script>
 
 </body>
 </html>
