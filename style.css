@@ -1,57 +1,38 @@
+:root { --nebula: #38bdf8; --deep: #020617; }
 body {
-    margin: 0;
-    font-family: 'Inter', sans-serif;
-    color: white;
-    background: #020617; /* Deepest blue */
-    background-image: url('https://images.unsplash.com/photo-1464802686167-b939a6910659?auto=format&fit=crop&w=1920');
-    background-attachment: fixed;
-    background-size: cover;
+    margin: 0; font-family: 'Inter', sans-serif; color: white;
+    background: var(--deep) url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1920') fixed center/cover;
 }
 
 .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
 }
-
-.container { max-width: 1100px; margin: auto; padding: 100px 20px 20px; }
 
 .navbar {
-    position: fixed; top: 0; width: 100%; padding: 15px 40px;
-    display: flex; justify-content: space-between; align-items: center;
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1000; box-sizing: border-box;
+    position: fixed; top: 0; width: 100%; padding: 15px 40px; display: flex;
+    justify-content: space-between; align-items: center; background: rgba(0,0,0,0.7); z-index: 1000; box-sizing: border-box;
 }
 
-.logo { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; font-size: 20px; }
-.logo span { color: #38bdf8; }
+.logo { font-family: 'Orbitron'; color: var(--nebula); }
+.container { max-width: 1000px; margin: auto; padding-top: 100px; }
 
-.grid-feed {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 25px; margin-top: 30px;
-}
+.grid-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
+.promo-card { overflow: hidden; transition: 0.3s; }
+.promo-card:hover { transform: scale(1.02); border-color: var(--nebula); }
+.promo-img { width: 100%; height: 160px; object-fit: cover; }
+.promo-content { padding: 15px; }
 
-.promo-card { overflow: hidden; transition: transform 0.3s ease; }
-.promo-card:hover { transform: translateY(-5px); border-color: #38bdf8; }
+.promo-footer { display: flex; gap: 10px; margin-top: 15px; }
+.promo-footer button { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 
-.promo-img { width: 100%; height: 180px; object-fit: cover; }
-.promo-content { padding: 20px; }
-.promo-content h4 { margin: 0 0 10px; font-family: 'Orbitron'; color: #38bdf8; }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
+.modal-content { max-width: 450px; margin: 10% auto; padding: 30px; position: relative; }
+.wide { max-width: 600px; }
+.close { position: absolute; right: 20px; top: 10px; font-size: 24px; cursor: pointer; }
 
-.promo-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-.deal-link { color: #38bdf8; text-decoration: none; font-weight: bold; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+.comment { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+.comment small { color: var(--nebula); font-weight: bold; }
 
-#contributionSection { padding: 30px; margin-bottom: 50px; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-textarea { grid-column: span 2; height: 100px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; }
-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; color: white; }
-
-button {
-    background: #38bdf8; color: #020617; border: none; padding: 12px 24px; 
-    border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Orbitron';
-}
-
-/* Modal Styling */
-.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-.modal-content { max-width: 400px; margin: 15% auto; padding: 40px; text-align: center; }
+input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; box-sizing: border-box; }
+button#addPromoBtn, button#loginBtn { width: 100%; background: var(--nebula); color: var(--deep); border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-family: 'Orbitron'; cursor: pointer; }

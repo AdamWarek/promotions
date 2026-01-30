@@ -9,12 +9,10 @@
 </head>
 <body>
 
-<div class="stars-container"></div>
-
 <nav class="navbar">
     <h1 class="logo">COSMIC<span>DEALS</span></h1>
     <div id="authControls">
-        <button id="showAuthBtn">Login / Explorer Sign-up</button>
+        <button id="showAuthBtn">Login to Explore</button>
         <div id="userBadge" style="display:none;">
             <span id="userEmail"></span>
             <button id="logoutBtn" class="outline-btn">Logout</button>
@@ -25,38 +23,40 @@
 <main class="container">
     <div id="authModal" class="modal">
         <div class="modal-content glass">
-            <span class="close">&times;</span>
+            <span class="close" onclick="closeModal('authModal')">&times;</span>
             <h2>Join the Nebula</h2>
-            <input id="email" type="email" placeholder="Email Address">
+            <input id="email" type="email" placeholder="Email">
             <input id="password" type="password" placeholder="Password">
-            <div class="btn-group">
-                <button id="loginBtn">Login</button>
-                <button id="signupBtn" class="secondary">Create Account</button>
-            </div>
-            <p id="authMsg"></p>
+            <button id="loginBtn">Login</button>
+            <button id="signupBtn" class="secondary">Sign Up</button>
         </div>
     </div>
 
     <section id="contributionSection" class="glass" style="display:none;">
-        <h3>Post a New Discovery</h3>
+        <h3>Launch a Discovery</h3>
         <div class="form-grid">
-            <input id="promoTitle" type="text" placeholder="Deal Subject (e.g. 80% Off Nebula Keyboards)">
-            <input id="promoLink" type="url" placeholder="Direct Link (https://...)">
-            <input id="promoImg" type="url" placeholder="Image URL (Realistic Space/Product Image)">
-            <textarea id="promoDesc" placeholder="Describe the deal..."></textarea>
-            <button id="addPromoBtn">Launch Promotion</button>
+            <input id="promoTitle" type="text" placeholder="Deal Subject">
+            <input id="promoLink" type="url" placeholder="Link (https://...)">
+            <input id="promoImg" type="url" placeholder="Image URL">
+            <textarea id="promoDesc" placeholder="Describe the discovery..."></textarea>
+            <button id="addPromoBtn">Post to Feed</button>
         </div>
     </section>
 
-    <section class="feed-section">
-        <div class="feed-header">
-            <h2>Universal Feed</h2>
-            <p>Discover deals from across the galaxy</p>
-        </div>
-        <div id="promotionsList" class="grid-feed">
-            </div>
-    </section>
+    <div id="promotionsList" class="grid-feed"></div>
 </main>
+
+<div id="commentModal" class="modal">
+    <div class="modal-content glass wide">
+        <span class="close" onclick="closeModal('commentModal')">&times;</span>
+        <h3 id="modalTitle">Comments</h3>
+        <div id="commentsContainer"></div>
+        <div id="commentInputArea" style="display:none;">
+            <textarea id="newCommentText" placeholder="Write a comment..."></textarea>
+            <button id="postCommentBtn">Post Comment</button>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
