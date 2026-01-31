@@ -1,341 +1,331 @@
-// 1. Initialize Supabase
+// Configuration
 const supabaseUrl = 'https://isfxqilovpicqwaafkzs.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzZnhxaWxvdnBpY3F3YWFma3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDk2NTQsImV4cCI6MjA4NTQyNTY1NH0.V3mTmjcp1wt-PWPMofuUvxVdZ8usO8Q2b0Y2fqQkXxw';
 
-// Fix: Use 'supabaseClient' to avoid conflict with global variable
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // State
 let currentUser = null;
-let currentPage = 1;
-let isLoginMode = true; 
-const itemsPerPage = 6; 
+let currentCategory = 'all';
+let currentSort = 'score';
+let currentPage = 0;
+const PAGE_SIZE = 5;
+let isLoading = false;
+let hasMore = true;
 
 // DOM Elements
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const userProfile = document.getElementById('userProfile');
-const userEmailSpan = document.getElementById('userEmail');
-const authModal = document.getElementById('authModal');
-const promoModal = document.getElementById('promoModal');
 const feed = document.getElementById('feed');
-const loading = document.getElementById('loading');
-const searchInput = document.getElementById('searchInput');
-const sortSelect = document.getElementById('sortSelect');
-const toggleAuthModeBtn = document.getElementById('toggleAuthModeBtn');
-const addPromoBtn = document.getElementById('addPromoBtn');
+const sentinel = document.getElementById('scrollSentinel');
+const skeletonLoader = document.getElementById('skeletonLoader');
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check Login Status
+    // 1. Check Session
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session?.user || null;
-    updateNav();
-    
-    // Load Data
-    fetchPromotions();
-
-    // Listen for Auth Changes
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-        currentUser = session?.user || null;
-        updateNav();
-        fetchPromotions(); 
-    });
-});
-
-// --- UI Logic ---
-function updateNav() {
-    if (currentUser) {
-        loginBtn.style.display = 'none';
-        userProfile.style.display = 'flex';
-        userEmailSpan.innerText = currentUser.email.split('@')[0];
-        addPromoBtn.style.display = 'block';
-    } else {
-        loginBtn.style.display = 'block';
-        userProfile.style.display = 'none';
-        addPromoBtn.style.display = 'none';
-    }
-}
-
-// --- Event Listeners ---
-if(loginBtn) loginBtn.addEventListener('click', () => { authModal.style.display = 'flex'; isLoginMode = true; updateAuthUI(); });
-if(logoutBtn) logoutBtn.addEventListener('click', async () => { await supabaseClient.auth.signOut(); window.location.reload(); });
-document.getElementById('closeAuth').addEventListener('click', () => { authModal.style.display = 'none'; });
-document.getElementById('closePromo').addEventListener('click', () => { promoModal.style.display = 'none'; });
-if(addPromoBtn) addPromoBtn.addEventListener('click', () => { promoModal.style.display = 'flex'; });
-
-toggleAuthModeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    isLoginMode = !isLoginMode;
     updateAuthUI();
+
+    // 2. Initialize Feed
+    observer.observe(sentinel); // Triggers loadPosts()
+
+    // 3. Setup Realtime Listener
+    supabaseClient.channel('public:promotions')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'promotions' }, payload => {
+            // Show toast or prepend if it matches filter (Advanced: Check category)
+            const toast = document.createElement('div');
+            toast.className = 'glass';
+            toast.style.cssText = 'position:fixed; bottom:80px; right:20px; padding:15px; background:var(--primary); color:white; border-radius:8px; z-index:1000; animation: fadein 0.5s;';
+            toast.textContent = `New Signal: ${payload.new.title}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        })
+        .subscribe();
 });
 
-document.getElementById('authForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const errorEl = document.getElementById('authError');
-    errorEl.innerText = 'Processing...';
-
-    let error;
-    if (isLoginMode) {
-        ({ error } = await supabaseClient.auth.signInWithPassword({ email, password }));
-    } else {
-        ({ error } = await supabaseClient.auth.signUp({ email, password }));
-        if (!error) {
-            alert('Sign up successful! Please check your email.');
-            isLoginMode = true;
-            updateAuthUI();
-            return;
-        }
-    }
-
-    if (error) {
-        errorEl.innerText = error.message;
-    } else {
-        authModal.style.display = 'none';
-        errorEl.innerText = '';
-        document.getElementById('authForm').reset();
+// --- Infinite Scroll ---
+const observer = new IntersectionObserver(async (entries) => {
+    if (entries[0].isIntersecting && hasMore && !isLoading) {
+        await loadPosts();
     }
 });
 
-function updateAuthUI() {
-    const title = document.getElementById('authTitle');
-    const submitBtn = document.getElementById('authSubmit');
-    const switchText = document.getElementById('authSwitchText');
-    const errorEl = document.getElementById('authError');
-    errorEl.innerText = ''; 
-    if (isLoginMode) {
-        title.innerText = 'Login'; submitBtn.innerText = 'Login';
-        switchText.innerText = "Don't have an account?"; toggleAuthModeBtn.innerText = "Create New Account";
-    } else {
-        title.innerText = 'Sign Up'; submitBtn.innerText = 'Sign Up';
-        switchText.innerText = "Already have an account?"; toggleAuthModeBtn.innerText = "Back to Login";
-    }
-}
+async function loadPosts() {
+    isLoading = true;
+    if (currentPage === 0) skeletonLoader.style.display = 'flex'; // Show skeleton on first load
 
-// --- Data & Logic ---
-
-async function fetchPromotions() {
-    loading.style.display = 'block';
-    feed.innerHTML = '';
-
-    const sortBy = sortSelect.value;
-    const from = (currentPage - 1) * itemsPerPage;
-    const to = from + itemsPerPage - 1;
+    const from = currentPage * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
 
     let query = supabaseClient
         .from('promotions_with_stats')
-        .select('*', { count: 'exact' })
-        .order(sortBy, { ascending: false })
+        .select('*')
+        .order(currentSort, { ascending: false })
         .range(from, to);
 
-    if (searchInput.value.trim()) {
-        const term = searchInput.value.trim();
-        query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
+    if (currentCategory !== 'all') {
+        query = query.eq('category', currentCategory);
     }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
+    skeletonLoader.style.display = 'none';
 
     if (error) {
-        console.error('Error:', error);
-        loading.innerHTML = 'Error loading cosmic data.';
+        console.error(error);
         return;
     }
 
-    loading.style.display = 'none';
-    renderPromotions(data);
-    updatePagination(count);
+    if (data.length < PAGE_SIZE) {
+        hasMore = false;
+        sentinel.textContent = "End of Transmission.";
+    }
+
+    renderPosts(data);
+    currentPage++;
+    isLoading = false;
 }
 
-function renderPromotions(promotions) {
-    if (!promotions || promotions.length === 0) {
-        feed.innerHTML = '<div style="text-align:center; padding:2rem; width:100%;">No promotions found in this sector.</div>';
-        return;
-    }
-
-    // SAFETY NET: Duplicate Prevention
-    const seenIds = new Set();
-    const fragment = document.createDocumentFragment();
-
-    promotions.forEach((p) => {
-        if (seenIds.has(p.id)) return;
-        seenIds.add(p.id);
-
+// --- Anti-XSS Rendering ---
+function renderPosts(posts) {
+    posts.forEach(p => {
+        // Create container
         const card = document.createElement('div');
-        card.className = 'promo-card';
-        card.id = `promo-${p.id}`; 
+        card.className = 'promo-card glass';
+        card.id = `post-${p.id}`;
+
+        // Safe Image
+        const img = document.createElement('img');
+        img.className = 'promo-img';
+        img.src = p.image_url;
+        img.onerror = () => img.src = 'https://via.placeholder.com/200x200?text=No+Signal'; // Fallback
+
+        // Content Container
+        const content = document.createElement('div');
+        content.className = 'promo-content';
+
+        // Category Tag
+        const tag = document.createElement('span');
+        tag.className = 'promo-tag';
+        tag.textContent = p.category || 'General';
+
+        // Safe Title
+        const title = document.createElement('h3');
+        title.className = 'card-title';
+        title.textContent = p.title; // Safe: textContent escapes HTML
         
-        const deleteBtn = (currentUser && currentUser.id === p.user_id) 
-            ? `<button onclick="deletePromo('${p.id}')" style="color:#ff4444; border:none; background:none; cursor:pointer; float:right;">Delete</button>` 
-            : '';
+        // Link wrapper for title
+        const link = document.createElement('a');
+        link.href = p.link;
+        link.target = '_blank';
+        link.style.textDecoration = 'none';
+        link.appendChild(title);
 
-        // Prevent negative scores visually
-        const displayScore = p.score < 0 ? 0 : p.score;
+        // Safe Description
+        const desc = document.createElement('p');
+        desc.className = 'card-desc';
+        desc.textContent = p.description;
 
-        card.innerHTML = `
-            <img src="${p.image_url}" class="promo-img" alt="Promo">
-            <div class="promo-content">
-                ${deleteBtn}
-                <a href="${p.link}" target="_blank" class="promo-title">${p.title} <i class="fa-solid fa-external-link-alt"></i></a>
-                <p class="promo-desc">${p.description}</p>
-                <div class="promo-meta">
-                    <span>${new Date(p.created_at).toLocaleDateString()}</span> • 
-                    <span style="cursor:pointer; color:var(--accent)" onclick="toggleComments('${p.id}')">
-                        ${p.comment_count} Comments
-                    </span>
-                </div>
-                <div id="comments-${p.id}" class="comments-section">
-                    <div id="list-${p.id}"></div>
-                    ${currentUser ? `
-                    <div style="display:flex; gap:5px; margin-top:5px;">
-                        <input type="text" id="input-${p.id}" placeholder="Write a comment..." style="flex:1; background:rgba(0,0,0,0.5); border:1px solid #333; color:white; padding:5px; border-radius:4px;">
-                        <button onclick="postComment('${p.id}')" class="btn btn-primary" style="padding:5px 10px; font-size:0.8rem;">Send</button>
-                    </div>` : '<small style="color:#888;">Login to comment</small>'}
-                </div>
-            </div>
-            <div class="vote-section" id="vote-box-${p.id}">
-                <div class="spinner-small">...</div> 
-            </div>
+        // Meta Row
+        const actions = document.createElement('div');
+        actions.className = 'actions-row';
+        actions.innerHTML = `
+            <span class="action-btn" onclick="openComments('${p.id}')">
+                <i class="fa-regular fa-comment"></i> ${p.comment_count}
+            </span>
+            <span class="action-btn" onclick="toggleBookmark('${p.id}', this)">
+                <i class="fa-regular fa-bookmark"></i> Save
+            </span>
+            <span><i class="fa-regular fa-eye"></i> ${p.views || 0}</span>
         `;
-        fragment.appendChild(card);
-        loadVoteStatus(p.id, p.score);
+
+        // Vote Section
+        const voteBox = document.createElement('div');
+        voteBox.className = 'vote-section';
+        voteBox.innerHTML = `
+            <i class="fa-solid fa-chevron-up vote-arrow up" onclick="handleVote('${p.id}', 1, this)"></i>
+            <span class="score">${p.score}</span>
+            <i class="fa-solid fa-chevron-down vote-arrow down" onclick="handleVote('${p.id}', -1, this)"></i>
+        `;
+
+        // Assembly
+        content.append(tag, link, desc, actions);
+        card.append(img, content, voteBox);
+        feed.appendChild(card);
     });
-
-    feed.appendChild(fragment);
 }
 
-async function loadVoteStatus(promoId, currentScore) {
-    const container = document.getElementById(`vote-box-${promoId}`);
-    let userVoteType = 0;
+// --- Filtering ---
+document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Update UI
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Reset Feed
+        currentCategory = btn.dataset.cat;
+        currentPage = 0;
+        hasMore = true;
+        feed.innerHTML = '';
+        sentinel.textContent = 'Loading...';
+        loadPosts();
+    });
+});
 
-    if (currentUser) {
-        const { data } = await supabaseClient
-            .from('votes')
-            .select('vote_type')
-            .eq('user_id', currentUser.id)
-            .eq('promotion_id', promoId)
-            .single();
-        if (data) userVoteType = data.vote_type;
-    }
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    currentPage = 0;
+    hasMore = true;
+    feed.innerHTML = '';
+    loadPosts();
+});
 
-    const activeLike = userVoteType === 1 ? 'active' : '';
-    const activeDislike = userVoteType === -1 ? 'active' : '';
-    const safeScore = currentScore < 0 ? 0 : currentScore;
-
-    container.innerHTML = `
-        <button class="vote-btn ${activeLike}" onclick="handleVote('${promoId}', 1)">
-            <i class="fa-solid fa-chevron-up"></i>
-        </button>
-        <span class="score">${safeScore}</span>
-        <button class="vote-btn ${activeDislike}" onclick="handleVote('${promoId}', -1)">
-            <i class="fa-solid fa-chevron-down"></i>
-        </button>
-    `;
-}
-
-// --- Pagination ---
-function updatePagination(totalCount) {
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
-    const indicator = document.getElementById('pageIndicator');
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-
-    indicator.innerText = `Page ${currentPage}`;
+// --- Actions ---
+window.handleVote = async (id, type, el) => {
+    if (!currentUser) return document.getElementById('authModal').style.display = 'flex';
     
-    prevBtn.disabled = currentPage === 1;
-    // Disable Next if we are on the last page or if there are 0 items
-    nextBtn.disabled = (currentPage >= totalPages) || (totalCount === 0);
-}
+    // Optimistic UI Update (Gamification feel)
+    const scoreEl = el.parentElement.querySelector('.score');
+    let current = parseInt(scoreEl.textContent);
+    scoreEl.textContent = current + type;
 
-// --- Global Actions ---
-window.handleVote = async (promoId, type) => {
-    if (!currentUser) return authModal.style.display = 'flex';
     const { error } = await supabaseClient
         .from('votes')
-        .upsert({ user_id: currentUser.id, promotion_id: promoId, vote_type: type }, { onConflict: 'user_id, promotion_id' });
-    if (!error) fetchPromotions();
+        .upsert({ user_id: currentUser.id, promotion_id: id, vote_type: type }, { onConflict: 'user_id, promotion_id' });
+        
+    if (error) scoreEl.textContent = current; // Revert on error
 };
 
-window.deletePromo = async (id) => {
-    if (!confirm('Are you sure?')) return;
-    const { error } = await supabaseClient.from('promotions').delete().eq('id', id);
-    if (!error) fetchPromotions();
-};
-
-window.toggleComments = async (promoId) => {
-    const section = document.getElementById(`comments-${promoId}`);
-    const list = document.getElementById(`list-${promoId}`);
-    if (section.style.display === 'block') { section.style.display = 'none'; return; }
+window.openComments = async (id) => {
+    const modal = document.getElementById('commentsModal');
+    const list = document.getElementById('commentsList');
+    modal.style.display = 'flex';
+    list.innerHTML = '<p style="text-align:center; color:#888;">Decrypting transmissions...</p>';
     
-    section.style.display = 'block';
-    list.innerHTML = 'Loading...';
-
-    const { data } = await supabaseClient.from('comments').select('*').eq('promotion_id', promoId).order('created_at', { ascending: true });
+    // Fetch comments
+    const { data } = await supabaseClient
+        .from('comments')
+        .select('*')
+        .eq('promotion_id', id)
+        .order('created_at', { ascending: true });
+        
     list.innerHTML = '';
     data.forEach(c => {
-        const isMine = currentUser && currentUser.id === c.user_id;
         const div = document.createElement('div');
-        div.className = 'comment';
-        div.innerHTML = `${c.content} ${isMine ? `<i class="fa-solid fa-trash delete-btn" onclick="deleteComment('${c.id}', '${promoId}')"></i>` : ''}`;
+        div.className = 'comment-item';
+        // Security: Prevent XSS in comments
+        div.textContent = c.content; 
         list.appendChild(div);
     });
+
+    // Handle Send
+    document.getElementById('sendCommentBtn').onclick = async () => {
+        const input = document.getElementById('commentInput');
+        if (!input.value.trim()) return;
+        
+        await supabaseClient.from('comments').insert({
+            user_id: currentUser?.id,
+            promotion_id: id,
+            content: input.value
+        });
+        
+        // Append locally immediately
+        const temp = document.createElement('div');
+        temp.className = 'comment-item';
+        temp.textContent = input.value;
+        list.appendChild(temp);
+        input.value = '';
+    };
 };
 
-window.postComment = async (promoId) => {
-    const input = document.getElementById(`input-${promoId}`);
-    const content = input.value.trim();
-    if (!content) return;
-    const { error } = await supabaseClient.from('comments').insert({ user_id: currentUser.id, promotion_id: promoId, content: content });
-    if (!error) { input.value = ''; window.toggleComments(promoId); window.toggleComments(promoId); }
+window.toggleBookmark = async (id, btn) => {
+    if (!currentUser) return alert("Login required");
+    btn.classList.toggle('bookmark-active');
+    
+    // Check if exists
+    const { data } = await supabaseClient.from('bookmarks').select('*').eq('user_id', currentUser.id).eq('promo_id', id);
+    
+    if (data.length > 0) {
+        await supabaseClient.from('bookmarks').delete().eq('user_id', currentUser.id).eq('promo_id', id);
+    } else {
+        await supabaseClient.from('bookmarks').insert({ user_id: currentUser.id, promo_id: id });
+    }
 };
 
-window.deleteComment = async (commentId, promoId) => {
-    await supabaseClient.from('comments').delete().eq('id', commentId);
-    window.toggleComments(promoId); window.toggleComments(promoId);
-};
+// --- Auth & Profile ---
+function updateAuthUI() {
+    const btn = document.getElementById('desktopLoginBtn');
+    const profile = document.getElementById('userProfile');
+    
+    if (currentUser) {
+        btn.style.display = 'none';
+        profile.style.display = 'flex';
+        document.getElementById('userEmail').textContent = currentUser.email.split('@')[0];
+        document.getElementById('addPromoBtn').style.display = 'block';
+        document.getElementById('mobileAddBtn').onclick = () => document.getElementById('promoModal').style.display = 'flex';
+        fetchUserRank();
+    } else {
+        btn.style.display = 'block';
+        profile.style.display = 'none';
+        document.getElementById('mobileAddBtn').onclick = () => alert("Login required");
+    }
+}
 
-// --- Promo Post Logic ---
+async function fetchUserRank() {
+    const { data } = await supabaseClient.from('user_ranks').select('total_karma').eq('user_id', currentUser.id).single();
+    const karma = data?.total_karma || 0;
+    const badge = document.getElementById('userRank');
+    
+    if (karma > 50) badge.textContent = "Galaxy Master";
+    else if (karma > 10) badge.textContent = "Explorer";
+    else badge.textContent = "Cadet";
+}
+
+// --- Upload Logic ---
 document.getElementById('promoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('postSubmit');
-    btn.disabled = true; btn.innerText = 'Uploading...';
+    btn.textContent = 'Uploading...';
+    btn.disabled = true;
 
+    // Image Upload
     const file = document.getElementById('promoImage').files[0];
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`; 
-    const { error: imgError } = await supabaseClient.storage.from('promotion-images').upload(fileName, file);
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const { error: uploadError } = await supabaseClient.storage.from('promotion-images').upload(fileName, file);
 
-    if (imgError) {
-        document.getElementById('promoError').innerText = 'Image upload failed: ' + imgError.message;
-        btn.disabled = false; return;
+    if (uploadError) {
+        alert("Upload Failed");
+        btn.disabled = false;
+        return;
     }
 
     const imgUrl = `${supabaseUrl}/storage/v1/object/public/promotion-images/${fileName}`;
-    const { error: dbError } = await supabaseClient.from('promotions').insert({
+
+    // Database Insert
+    const { error } = await supabaseClient.from('promotions').insert({
         title: document.getElementById('promoTitle').value,
         description: document.getElementById('promoDesc').value,
         link: document.getElementById('promoLink').value,
+        category: document.getElementById('promoCategory').value,
         image_url: imgUrl,
         user_id: currentUser.id
     });
 
-    if (dbError) document.getElementById('promoError').innerText = dbError.message;
-    else {
-        promoModal.style.display = 'none';
-        document.getElementById('promoForm').reset();
-        fetchPromotions();
+    if (!error) {
+        document.getElementById('promoModal').style.display = 'none';
+        // Reset feed to show new post at top
+        currentPage = 0;
+        feed.innerHTML = '';
+        hasMore = true;
+        loadPosts();
     }
-    btn.disabled = false; btn.innerText = 'Launch';
+    
+    btn.disabled = false;
+    btn.textContent = 'Launch';
 });
 
-// Search/Pagination Listeners
-searchInput.addEventListener('input', () => { currentPage = 1; fetchPromotions(); });
-sortSelect.addEventListener('change', () => { currentPage = 1; fetchPromotions(); });
-document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; fetchPromotions(); }});
-document.getElementById('nextPage').addEventListener('click', () => { currentPage++; fetchPromotions(); });
-
-// Close on outside click
-window.onclick = (e) => {
-    if (e.target == authModal) authModal.style.display = "none";
-    if (e.target == promoModal) promoModal.style.display = "none";
-}
+// Modal Toggles
+const closeModal = (id) => document.getElementById(id).style.display = 'none';
+document.getElementById('closeAuth').onclick = () => closeModal('authModal');
+document.getElementById('closePromo').onclick = () => closeModal('promoModal');
+document.getElementById('closeComments').onclick = () => closeModal('commentsModal');
+document.getElementById('desktopLoginBtn').onclick = () => document.getElementById('authModal').style.display = 'flex';
+document.getElementById('mobileProfileBtn').onclick = () => document.getElementById('authModal').style.display = 'flex';
+document.getElementById('logoutBtn').onclick = async () => { await supabaseClient.auth.signOut(); location.reload(); };

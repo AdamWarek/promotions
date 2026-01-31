@@ -3,97 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Promo | Aggregator</title>
+    <title>Cosmic Promo | Live Feed</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <nav>
+    <nav class="desktop-nav">
         <div class="logo"><i class="fa-solid fa-rocket"></i> Cosmic Promo</div>
-        
         <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search promotions...">
+            <input type="text" id="searchInput" placeholder="Search the galaxy...">
         </div>
-
         <div class="auth-buttons">
-            <button id="loginBtn" class="btn btn-primary">Login / Sign Up</button>
-            
+            <button id="desktopLoginBtn" class="btn btn-primary">Login / Join</button>
             <div id="userProfile" style="display: none; align-items: center; gap: 10px;">
-                <span id="userEmail" style="color: #00f3ff; font-weight: bold; text-shadow: 0 0 5px rgba(0,243,255,0.5);"></span>
-                <button id="logoutBtn" class="btn btn-outline" style="font-size: 0.8rem;">Logout</button>
+                <span class="rank-badge" id="userRank">Cadet</span>
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-outline small-btn">Logout</button>
             </div>
         </div>
     </nav>
 
     <div class="container">
         <aside>
-            <div class="control-panel">
-                <button class="btn btn-primary" id="addPromoBtn" style="display: none; width: 100%; margin-bottom: 20px;">
-                    <i class="fa-solid fa-plus"></i> Post Promotion
+            <div class="control-panel glass">
+                <button class="btn btn-primary full-width" id="addPromoBtn" style="display: none;">
+                    <i class="fa-solid fa-plus"></i> Launch Promo
                 </button>
-                <h3>Sort By</h3>
-                <select id="sortSelect" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.1);">
-                    <option value="score">Hottest (Score)</option>
-                    <option value="created_at">Newest</option>
+                
+                <h3><i class="fa-solid fa-filter"></i> Filter</h3>
+                <div class="filter-group">
+                    <button class="category-btn active" data-cat="all">All Sectors</button>
+                    <button class="category-btn" data-cat="Tech">Hardware</button>
+                    <button class="category-btn" data-cat="Software">Software</button>
+                    <button class="category-btn" data-cat="Gaming">Gaming</button>
+                    <button class="category-btn" data-cat="Crypto">Crypto</button>
+                </div>
+
+                <h3 style="margin-top: 20px;"><i class="fa-solid fa-sort"></i> Sort</h3>
+                <select id="sortSelect">
+                    <option value="score">Hottest (Gravity)</option>
+                    <option value="created_at">Newest (Arrival)</option>
+                    <option value="views">Most Viewed</option>
                 </select>
             </div>
         </aside>
 
         <main>
-            <div id="loading" class="loading">
-                <i class="fa-solid fa-spinner fa-spin"></i> Scanning Deep Space...
+            <div id="skeletonLoader" class="skeleton-container" style="display:none;">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
             </div>
+
             <div id="feed" class="feed-grid">
                 </div>
-            <div class="pagination">
-                <button id="prevPage" class="btn btn-outline" disabled>Previous</button>
-                <span id="pageIndicator" style="margin: 0 15px;">Page 1</span>
-                <button id="nextPage" class="btn btn-outline">Next</button>
+
+            <div id="scrollSentinel" style="height: 50px; text-align: center; color: #555;">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Loading more data...
             </div>
         </main>
     </div>
 
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeAuth">&times;</span>
-            <h2 id="authTitle" style="margin-bottom: 20px;">Login</h2>
-            
-            <form id="authForm">
-                <div style="margin-bottom: 15px;">
-                    <label>Email</label>
-                    <input type="email" id="email" placeholder="Enter email" required>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label>Password</label>
-                    <input type="password" id="password" placeholder="Enter password" required>
-                </div>
-                <button type="submit" class="btn btn-primary" id="authSubmit" style="width: 100%;">Login</button>
-            </form>
+    <div class="mobile-nav glass">
+        <div class="nav-item active" onclick="window.scrollTo(0,0)"><i class="fa-solid fa-home"></i></div>
+        <div class="nav-item" id="mobileSearchBtn"><i class="fa-solid fa-search"></i></div>
+        <div class="nav-item highlight" id="mobileAddBtn"><i class="fa-solid fa-plus"></i></div>
+        <div class="nav-item" id="mobileProfileBtn"><i class="fa-solid fa-user"></i></div>
+    </div>
 
-            <div style="margin-top: 20px; text-align: center; border-top: 1px solid #333; padding-top: 15px;">
-                <p id="authSwitchText" style="color:#aaa;">Don't have an account?</p>
-                <button id="toggleAuthModeBtn" class="btn btn-outline" style="margin-top: 10px; font-size: 0.9rem;">Create New Account</button>
+    <div id="authModal" class="modal">
+        <div class="modal-content glass">
+            <span class="close" id="closeAuth">&times;</span>
+            <h2 id="authTitle">Identify Yourself</h2>
+            <form id="authForm">
+                <input type="email" id="email" placeholder="Email Frequency" required>
+                <input type="password" id="password" placeholder="Access Code" required>
+                <button type="submit" class="btn btn-primary full-width" id="authSubmit">Login</button>
+            </form>
+            <div class="auth-switch">
+                <p id="authSwitchText">New to the fleet?</p>
+                <button id="toggleAuthModeBtn" class="btn btn-text">Create ID</button>
             </div>
-            
             <p id="authError" class="error"></p>
         </div>
     </div>
 
     <div id="promoModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content glass">
             <span class="close" id="closePromo">&times;</span>
-            <h2>Post New Promotion</h2>
+            <h2>Broadcast Signal</h2>
             <form id="promoForm">
-                <input type="text" id="promoTitle" placeholder="Title" required>
-                <textarea id="promoDesc" placeholder="Description (Max 200 chars)" maxlength="200" required></textarea>
-                <input type="url" id="promoLink" placeholder="External Link (https://...)" required>
-                <label for="promoImage" style="display:block; margin-top:10px; color:#aaa;">Upload Image</label>
+                <input type="text" id="promoTitle" placeholder="Signal Title" required>
+                <textarea id="promoDesc" placeholder="Description (Max 280 chars)" maxlength="280" required></textarea>
+                
+                <label>Sector Category</label>
+                <select id="promoCategory" required>
+                    <option value="Tech">Hardware</option>
+                    <option value="Software">Software</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Crypto">Crypto</option>
+                    <option value="General">General Space</option>
+                </select>
+
+                <input type="url" id="promoLink" placeholder="Coordinates (https://...)" required>
                 <input type="file" id="promoImage" accept="image/*" required>
-                <button type="submit" class="btn btn-primary" id="postSubmit" style="width:100%; margin-top:10px;">Launch</button>
+                <button type="submit" class="btn btn-primary full-width" id="postSubmit">Launch</button>
             </form>
             <p id="promoError" class="error"></p>
+        </div>
+    </div>
+
+    <div id="commentsModal" class="modal">
+        <div class="modal-content glass wide">
+            <span class="close" id="closeComments">&times;</span>
+            <h3 id="commentsTitle">Transmissions</h3>
+            <div id="commentsList" class="comments-scroll"></div>
+            <div class="comment-input-area">
+                <input type="text" id="commentInput" placeholder="Send transmission...">
+                <button id="sendCommentBtn" class="btn btn-primary">Send</button>
+            </div>
         </div>
     </div>
 
