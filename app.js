@@ -3,38 +3,69 @@ let currentUser = null;
 let currentPromotions = [];
 let userVotes = new Map();
 
-// DOM Elements
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const userInfo = document.getElementById('user-info');
-const userEmailSpan = document.getElementById('user-email');
-const authModal = document.getElementById('auth-modal');
-const authForm = document.getElementById('auth-form');
-const signupBtn = document.getElementById('signup-btn');
-const closeModal = document.querySelector('.close');
-const addPromoSection = document.getElementById('add-promo-section');
-const promoForm = document.getElementById('promo-form');
-const promotionsList = document.getElementById('promotions-list');
-const sortSelect = document.getElementById('sort-select');
+// DOM Elements - will be initialized after DOM loads
+let loginBtn, logoutBtn, userInfo, userEmailSpan, authModal, authForm, signupBtn, closeModal;
+let addPromoSection, promoForm, promotionsList, sortSelect;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkUser();
-    await loadPromotions();
+    console.log('App initializing...');
+    
+    // Check if Supabase is configured
+    if (!window.supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+        alert('ERROR: Please configure Supabase credentials in config.js file!');
+        return;
+    }
+    
+    // Initialize DOM elements
+    initializeDOMElements();
+    
+    // Setup event listeners
     setupEventListeners();
+    
+    // Check authentication status
+    await checkUser();
+    
+    // Load promotions
+    await loadPromotions();
+    
+    console.log('App initialized successfully');
 });
+
+// Initialize DOM elements
+function initializeDOMElements() {
+    loginBtn = document.getElementById('login-btn');
+    logoutBtn = document.getElementById('logout-btn');
+    userInfo = document.getElementById('user-info');
+    userEmailSpan = document.getElementById('user-email');
+    authModal = document.getElementById('auth-modal');
+    authForm = document.getElementById('auth-form');
+    signupBtn = document.getElementById('signup-btn');
+    closeModal = document.querySelector('.close');
+    addPromoSection = document.getElementById('add-promo-section');
+    promoForm = document.getElementById('promo-form');
+    promotionsList = document.getElementById('promotions-list');
+    sortSelect = document.getElementById('sort-select');
+}
 
 // Setup event listeners
 function setupEventListeners() {
-    loginBtn.addEventListener('click', () => {
-        authModal.style.display = 'block';
-    });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            console.log('Login button clicked');
+            authModal.style.display = 'block';
+        });
+    }
 
-    logoutBtn.addEventListener('click', handleLogout);
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
 
-    closeModal.addEventListener('click', () => {
-        authModal.style.display = 'none';
-    });
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            authModal.style.display = 'none';
+        });
+    }
 
     window.addEventListener('click', (e) => {
         if (e.target === authModal) {
@@ -42,109 +73,209 @@ function setupEventListeners() {
         }
     });
 
-    authForm.addEventListener('submit', handleLogin);
-    signupBtn.addEventListener('click', handleSignup);
-    promoForm.addEventListener('submit', handleAddPromotion);
-    sortSelect.addEventListener('change', loadPromotions);
+    if (authForm) {
+        authForm.addEventListener('submit', handleLogin);
+    }
+    
+    if (signupBtn) {
+        signupBtn.addEventListener('click', handleSignup);
+    }
+    
+    if (promoForm) {
+        promoForm.addEventListener('submit', handleAddPromotion);
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', loadPromotions);
+    }
+
+    // Listen for auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed:', event);
+        if (event === 'SIGNED_IN') {
+            currentUser = session.user;
+            updateUIForLoggedInUser();
+            loadUserVotes();
+            loadPromotions();
+        } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            userVotes.clear();
+            updateUIForLoggedOutUser();
+            loadPromotions();
+        }
+    });
 }
 
 // Check if user is logged in
 async function checkUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-        currentUser = user;
-        updateUIForLoggedInUser();
-        await loadUserVotes();
-    } else {
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+            console.error('Error checking user:', error);
+            updateUIForLoggedOutUser();
+            return;
+        }
+        
+        if (user) {
+            console.log('User is logged in:', user.email);
+            currentUser = user;
+            updateUIForLoggedInUser();
+            await loadUserVotes();
+        } else {
+            console.log('No user logged in');
+            updateUIForLoggedOutUser();
+        }
+    } catch (err) {
+        console.error('Exception in checkUser:', err);
         updateUIForLoggedOutUser();
     }
 }
 
 // Update UI for logged in user
 function updateUIForLoggedInUser() {
-    loginBtn.style.display = 'none';
-    userInfo.style.display = 'flex';
-    userEmailSpan.textContent = currentUser.email;
-    addPromoSection.style.display = 'block';
+    if (!currentUser) return;
+    
+    console.log('Updating UI for logged in user');
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (userInfo) userInfo.style.display = 'flex';
+    if (userEmailSpan) userEmailSpan.textContent = currentUser.email;
+    if (addPromoSection) addPromoSection.style.display = 'block';
 }
 
 // Update UI for logged out user
 function updateUIForLoggedOutUser() {
-    loginBtn.style.display = 'block';
-    userInfo.style.display = 'none';
-    addPromoSection.style.display = 'none';
+    console.log('Updating UI for logged out user');
+    if (loginBtn) loginBtn.style.display = 'block';
+    if (userInfo) userInfo.style.display = 'none';
+    if (addPromoSection) addPromoSection.style.display = 'none';
 }
 
 // Handle login
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('auth-email').value;
+    console.log('Attempting login...');
+    
+    const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    });
+    if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+    }
 
-    if (error) {
-        alert('Login failed: ' + error.message);
-    } else {
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            console.error('Login error:', error);
+            alert('Login failed: ' + error.message);
+            return;
+        }
+
+        console.log('Login successful:', data.user.email);
         currentUser = data.user;
         authModal.style.display = 'none';
+        authForm.reset();
         updateUIForLoggedInUser();
         await loadUserVotes();
         await loadPromotions();
-        authForm.reset();
+        
+    } catch (err) {
+        console.error('Login exception:', err);
+        alert('Login failed: ' + err.message);
     }
 }
 
 // Handle signup
-async function handleSignup() {
-    const email = document.getElementById('auth-email').value;
+async function handleSignup(e) {
+    if (e) e.preventDefault();
+    console.log('Attempting signup...');
+    
+    const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
 
     if (!email || !password) {
-        alert('Please enter email and password');
+        alert('Please enter both email and password');
         return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-    });
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+    }
 
-    if (error) {
-        alert('Signup failed: ' + error.message);
-    } else {
-        alert('Signup successful! Please check your email to verify your account.');
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                emailRedirectTo: window.location.origin
+            }
+        });
+
+        if (error) {
+            console.error('Signup error:', error);
+            alert('Signup failed: ' + error.message);
+            return;
+        }
+
+        console.log('Signup successful');
+        alert('Signup successful! You can now sign in with your credentials.');
         authForm.reset();
+        
+    } catch (err) {
+        console.error('Signup exception:', err);
+        alert('Signup failed: ' + err.message);
     }
 }
 
 // Handle logout
 async function handleLogout() {
-    await supabase.auth.signOut();
-    currentUser = null;
-    userVotes.clear();
-    updateUIForLoggedOutUser();
-    await loadPromotions();
+    console.log('Logging out...');
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Logout error:', error);
+            alert('Logout failed: ' + error.message);
+        } else {
+            currentUser = null;
+            userVotes.clear();
+            updateUIForLoggedOutUser();
+            await loadPromotions();
+        }
+    } catch (err) {
+        console.error('Logout exception:', err);
+    }
 }
 
 // Load user votes
 async function loadUserVotes() {
     if (!currentUser) return;
 
-    const { data, error } = await supabase
-        .from('votes')
-        .select('promotion_id')
-        .eq('user_id', currentUser.id);
+    try {
+        const { data, error } = await supabase
+            .from('votes')
+            .select('promotion_id')
+            .eq('user_id', currentUser.id);
 
-    if (!error && data) {
+        if (error) {
+            console.error('Error loading votes:', error);
+            return;
+        }
+
         userVotes.clear();
-        data.forEach(vote => {
-            userVotes.set(vote.promotion_id, true);
-        });
+        if (data) {
+            data.forEach(vote => {
+                userVotes.set(vote.promotion_id, true);
+            });
+            console.log('Loaded user votes:', userVotes.size);
+        }
+    } catch (err) {
+        console.error('Exception loading votes:', err);
     }
 }
 
@@ -157,69 +288,94 @@ async function handleAddPromotion(e) {
         return;
     }
 
-    const title = document.getElementById('promo-title').value;
-    const description = document.getElementById('promo-description').value;
-    const link = document.getElementById('promo-link').value;
-    const store = document.getElementById('promo-store').value;
+    const title = document.getElementById('promo-title').value.trim();
+    const description = document.getElementById('promo-description').value.trim();
+    const link = document.getElementById('promo-link').value.trim();
+    const store = document.getElementById('promo-store').value.trim();
 
-    const { data, error } = await supabase
-        .from('promotions')
-        .insert([
-            {
-                title,
-                description,
-                link: link || null,
-                store,
-                user_id: currentUser.id
-            }
-        ]);
+    if (!title || !description || !store) {
+        alert('Please fill in all required fields');
+        return;
+    }
 
-    if (error) {
-        alert('Error adding promotion: ' + error.message);
-    } else {
+    try {
+        const { data, error } = await supabase
+            .from('promotions')
+            .insert([
+                {
+                    title: title,
+                    description: description,
+                    link: link || null,
+                    store: store,
+                    user_id: currentUser.id
+                }
+            ])
+            .select();
+
+        if (error) {
+            console.error('Error adding promotion:', error);
+            alert('Error adding promotion: ' + error.message);
+            return;
+        }
+
+        console.log('Promotion added successfully');
         promoForm.reset();
         await loadPromotions();
         alert('Promotion added successfully!');
+        
+    } catch (err) {
+        console.error('Exception adding promotion:', err);
+        alert('Error adding promotion: ' + err.message);
     }
 }
 
 // Load promotions
 async function loadPromotions() {
-    const sortBy = sortSelect.value;
-    let query = supabase
-        .from('promotions')
-        .select(`
-            *,
-            votes:votes(count),
-            comments:comments(count)
-        `);
+    console.log('Loading promotions...');
+    
+    try {
+        const sortBy = sortSelect ? sortSelect.value : 'newest';
+        let query = supabase
+            .from('promotions')
+            .select(`
+                *,
+                votes:votes(count),
+                comments:comments(count)
+            `);
 
-    // Apply sorting
-    if (sortBy === 'newest') {
-        query = query.order('created_at', { ascending: false });
-    } else if (sortBy === 'oldest') {
-        query = query.order('created_at', { ascending: true });
+        // Apply sorting
+        if (sortBy === 'newest') {
+            query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'oldest') {
+            query = query.order('created_at', { ascending: true });
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error loading promotions:', error);
+            promotionsList.innerHTML = '<div class="card">Error loading promotions: ' + error.message + '</div>';
+            return;
+        }
+
+        currentPromotions = data || [];
+        console.log('Loaded promotions:', currentPromotions.length);
+
+        // Sort by popularity if needed
+        if (sortBy === 'popular') {
+            currentPromotions.sort((a, b) => {
+                const aVotes = a.votes[0]?.count || 0;
+                const bVotes = b.votes[0]?.count || 0;
+                return bVotes - aVotes;
+            });
+        }
+
+        renderPromotions();
+        
+    } catch (err) {
+        console.error('Exception loading promotions:', err);
+        promotionsList.innerHTML = '<div class="card">Error loading promotions: ' + err.message + '</div>';
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-        promotionsList.innerHTML = '<div class="card">Error loading promotions</div>';
-        return;
-    }
-
-    currentPromotions = data;
-
-    // Sort by popularity if needed
-    if (sortBy === 'popular') {
-        currentPromotions.sort((a, b) => {
-            const aVotes = a.votes[0]?.count || 0;
-            const bVotes = b.votes[0]?.count || 0;
-            return bVotes - aVotes;
-        });
-    }
-
-    renderPromotions();
 }
 
 // Render promotions
@@ -248,8 +404,8 @@ function renderPromotions() {
                 ${promo.link ? `<a href="${escapeHtml(promo.link)}" target="_blank" rel="noopener noreferrer" class="promo-link">View Promotion →</a>` : ''}
                 <div class="promo-actions">
                     <div class="vote-section">
-                        <button class="vote-btn ${hasVoted ? 'voted' : ''}" onclick="handleVote('${promo.id}')" ${!currentUser ? 'disabled' : ''}>
-                            ${hasVoted ? '👍' : '👍'}
+                        <button class="vote-btn ${hasVoted ? 'voted' : ''}" onclick="handleVote('${promo.id}')" ${!currentUser ? 'disabled' : ''} title="${!currentUser ? 'Please log in to vote' : ''}">
+                            👍
                         </button>
                         <span class="vote-count">${voteCount}</span>
                     </div>
@@ -278,36 +434,53 @@ async function handleVote(promotionId) {
         return;
     }
 
+    console.log('Toggling vote for promotion:', promotionId);
     const hasVoted = userVotes.has(promotionId);
 
-    if (hasVoted) {
-        // Remove vote
-        const { error } = await supabase
-            .from('votes')
-            .delete()
-            .eq('promotion_id', promotionId)
-            .eq('user_id', currentUser.id);
+    try {
+        if (hasVoted) {
+            // Remove vote
+            const { error } = await supabase
+                .from('votes')
+                .delete()
+                .eq('promotion_id', promotionId)
+                .eq('user_id', currentUser.id);
 
-        if (!error) {
+            if (error) {
+                console.error('Error removing vote:', error);
+                alert('Error removing vote: ' + error.message);
+                return;
+            }
+            
             userVotes.delete(promotionId);
-        }
-    } else {
-        // Add vote
-        const { error } = await supabase
-            .from('votes')
-            .insert([
-                {
-                    promotion_id: promotionId,
-                    user_id: currentUser.id
-                }
-            ]);
+            console.log('Vote removed');
+        } else {
+            // Add vote
+            const { error } = await supabase
+                .from('votes')
+                .insert([
+                    {
+                        promotion_id: promotionId,
+                        user_id: currentUser.id
+                    }
+                ]);
 
-        if (!error) {
+            if (error) {
+                console.error('Error adding vote:', error);
+                alert('Error adding vote: ' + error.message);
+                return;
+            }
+            
             userVotes.set(promotionId, true);
+            console.log('Vote added');
         }
-    }
 
-    await loadPromotions();
+        await loadPromotions();
+        
+    } catch (err) {
+        console.error('Exception handling vote:', err);
+        alert('Error handling vote: ' + err.message);
+    }
 }
 
 // Toggle comments
@@ -326,32 +499,39 @@ async function toggleComments(promotionId) {
 async function loadComments(promotionId) {
     const commentsList = document.getElementById(`comments-list-${promotionId}`);
 
-    const { data, error } = await supabase
-        .from('comments')
-        .select('*, user_email')
-        .eq('promotion_id', promotionId)
-        .order('created_at', { ascending: false });
+    try {
+        const { data, error } = await supabase
+            .from('comments')
+            .select('*, user_email')
+            .eq('promotion_id', promotionId)
+            .order('created_at', { ascending: false });
 
-    if (error) {
+        if (error) {
+            console.error('Error loading comments:', error);
+            commentsList.innerHTML = '<p>Error loading comments</p>';
+            return;
+        }
+
+        if (data.length === 0) {
+            commentsList.innerHTML = '<p style="color: #888; font-style: italic;">No comments yet. Be the first to comment!</p>';
+            return;
+        }
+
+        commentsList.innerHTML = data.map(comment => {
+            const date = new Date(comment.created_at).toLocaleString();
+            return `
+                <div class="comment">
+                    <div class="comment-author">${escapeHtml(comment.user_email)}</div>
+                    <div class="comment-date">${date}</div>
+                    <div class="comment-text">${escapeHtml(comment.text)}</div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        console.error('Exception loading comments:', err);
         commentsList.innerHTML = '<p>Error loading comments</p>';
-        return;
     }
-
-    if (data.length === 0) {
-        commentsList.innerHTML = '<p style="color: #888; font-style: italic;">No comments yet. Be the first to comment!</p>';
-        return;
-    }
-
-    commentsList.innerHTML = data.map(comment => {
-        const date = new Date(comment.created_at).toLocaleString();
-        return `
-            <div class="comment">
-                <div class="comment-author">${escapeHtml(comment.user_email)}</div>
-                <div class="comment-date">${date}</div>
-                <div class="comment-text">${escapeHtml(comment.text)}</div>
-            </div>
-        `;
-    }).join('');
 }
 
 // Handle add comment
@@ -369,28 +549,38 @@ async function handleAddComment(promotionId) {
         return;
     }
 
-    const { error } = await supabase
-        .from('comments')
-        .insert([
-            {
-                promotion_id: promotionId,
-                user_id: currentUser.id,
-                user_email: currentUser.email,
-                text
-            }
-        ]);
+    try {
+        const { error } = await supabase
+            .from('comments')
+            .insert([
+                {
+                    promotion_id: promotionId,
+                    user_id: currentUser.id,
+                    user_email: currentUser.email,
+                    text: text
+                }
+            ]);
 
-    if (error) {
-        alert('Error adding comment: ' + error.message);
-    } else {
+        if (error) {
+            console.error('Error adding comment:', error);
+            alert('Error adding comment: ' + error.message);
+            return;
+        }
+
+        console.log('Comment added successfully');
         textarea.value = '';
         await loadPromotions();
         await loadComments(promotionId);
+        
+    } catch (err) {
+        console.error('Exception adding comment:', err);
+        alert('Error adding comment: ' + err.message);
     }
 }
 
 // Utility function to escape HTML
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
