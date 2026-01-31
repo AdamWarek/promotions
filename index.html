@@ -69,8 +69,12 @@
         </div>
     </footer>
 
+    <!-- IMPORTANT: Load scripts in this exact order -->
+    <!-- 1. Supabase library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 2. Config (must load before app.js) -->
     <script src="config.js"></script>
+    <!-- 3. App logic -->
     <script src="app.js"></script>
 </body>
 </html>
