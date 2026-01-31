@@ -2,14 +2,14 @@
 const supabaseUrl = 'https://isfxqilovpicqwaafkzs.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzZnhxaWxvdnBpY3F3YWFma3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDk2NTQsImV4cCI6MjA4NTQyNTY1NH0.V3mTmjcp1wt-PWPMofuUvxVdZ8usO8Q2b0Y2fqQkXxw';
 
-// FIX: We name this 'supabaseClient' instead of 'supabase' to avoid conflict
+// Fix: Use 'supabaseClient' to avoid conflict with global variable
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // State
 let currentUser = null;
 let currentPage = 1;
 let isLoginMode = true; 
-const itemsPerPage = 5;
+const itemsPerPage = 6; 
 
 // DOM Elements
 const loginBtn = document.getElementById('loginBtn');
@@ -27,8 +27,6 @@ const addPromoBtn = document.getElementById('addPromoBtn');
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("App initialized");
-
     // Check Login Status
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session?.user || null;
@@ -39,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listen for Auth Changes
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        console.log("Auth changed:", event);
         currentUser = session?.user || null;
         updateNav();
         fetchPromotions(); 
@@ -49,13 +46,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- UI Logic ---
 function updateNav() {
     if (currentUser) {
-        // Show Profile, Hide Login Button
         loginBtn.style.display = 'none';
         userProfile.style.display = 'flex';
         userEmailSpan.innerText = currentUser.email.split('@')[0];
         addPromoBtn.style.display = 'block';
     } else {
-        // Show Login Button, Hide Profile
         loginBtn.style.display = 'block';
         userProfile.style.display = 'none';
         addPromoBtn.style.display = 'none';
@@ -63,47 +58,18 @@ function updateNav() {
 }
 
 // --- Event Listeners ---
+if(loginBtn) loginBtn.addEventListener('click', () => { authModal.style.display = 'flex'; isLoginMode = true; updateAuthUI(); });
+if(logoutBtn) logoutBtn.addEventListener('click', async () => { await supabaseClient.auth.signOut(); window.location.reload(); });
+document.getElementById('closeAuth').addEventListener('click', () => { authModal.style.display = 'none'; });
+document.getElementById('closePromo').addEventListener('click', () => { promoModal.style.display = 'none'; });
+if(addPromoBtn) addPromoBtn.addEventListener('click', () => { promoModal.style.display = 'flex'; });
 
-// 1. Open Auth Modal
-if(loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        authModal.style.display = 'flex';
-        isLoginMode = true;
-        updateAuthUI();
-    });
-}
-
-// 2. Logout
-if(logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        window.location.reload();
-    });
-}
-
-// 3. Close Modals
-document.getElementById('closeAuth').addEventListener('click', () => {
-    authModal.style.display = 'none';
-});
-document.getElementById('closePromo').addEventListener('click', () => {
-    promoModal.style.display = 'none';
-});
-
-// 4. Open Add Promo Modal
-if(addPromoBtn) {
-    addPromoBtn.addEventListener('click', () => {
-        promoModal.style.display = 'flex';
-    });
-}
-
-// 5. Toggle Login/Sign Up
 toggleAuthModeBtn.addEventListener('click', (e) => {
     e.preventDefault();
     isLoginMode = !isLoginMode;
     updateAuthUI();
 });
 
-// 6. Handle Auth Form Submit
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
@@ -117,7 +83,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     } else {
         ({ error } = await supabaseClient.auth.signUp({ email, password }));
         if (!error) {
-            alert('Sign up successful! Please check your email to confirm your account.');
+            alert('Sign up successful! Please check your email.');
             isLoginMode = true;
             updateAuthUI();
             return;
@@ -138,19 +104,13 @@ function updateAuthUI() {
     const submitBtn = document.getElementById('authSubmit');
     const switchText = document.getElementById('authSwitchText');
     const errorEl = document.getElementById('authError');
-
     errorEl.innerText = ''; 
-
     if (isLoginMode) {
-        title.innerText = 'Login';
-        submitBtn.innerText = 'Login';
-        switchText.innerText = "Don't have an account?";
-        toggleAuthModeBtn.innerText = "Create New Account";
+        title.innerText = 'Login'; submitBtn.innerText = 'Login';
+        switchText.innerText = "Don't have an account?"; toggleAuthModeBtn.innerText = "Create New Account";
     } else {
-        title.innerText = 'Sign Up';
-        submitBtn.innerText = 'Sign Up';
-        switchText.innerText = "Already have an account?";
-        toggleAuthModeBtn.innerText = "Back to Login";
+        title.innerText = 'Sign Up'; submitBtn.innerText = 'Sign Up';
+        switchText.innerText = "Already have an account?"; toggleAuthModeBtn.innerText = "Back to Login";
     }
 }
 
@@ -190,32 +150,28 @@ async function fetchPromotions() {
 
 function renderPromotions(promotions) {
     if (!promotions || promotions.length === 0) {
-        feed.innerHTML = '<div style="text-align:center; padding:2rem;">No promotions found in this sector.</div>';
+        feed.innerHTML = '<div style="text-align:center; padding:2rem; width:100%;">No promotions found in this sector.</div>';
         return;
     }
 
-    promotions.forEach(async (p) => {
+    // SAFETY NET: Duplicate Prevention
+    const seenIds = new Set();
+    const fragment = document.createDocumentFragment();
+
+    promotions.forEach((p) => {
+        if (seenIds.has(p.id)) return;
+        seenIds.add(p.id);
+
         const card = document.createElement('div');
         card.className = 'promo-card';
+        card.id = `promo-${p.id}`; 
         
-        let voteClassLike = '';
-        let voteClassDislike = '';
-        
-        if (currentUser) {
-            const { data: userVote } = await supabaseClient
-                .from('votes')
-                .select('vote_type')
-                .eq('user_id', currentUser.id)
-                .eq('promotion_id', p.id)
-                .single();
-            
-            if (userVote?.vote_type === 1) voteClassLike = 'active';
-            if (userVote?.vote_type === -1) voteClassDislike = 'active';
-        }
-
         const deleteBtn = (currentUser && currentUser.id === p.user_id) 
             ? `<button onclick="deletePromo('${p.id}')" style="color:#ff4444; border:none; background:none; cursor:pointer; float:right;">Delete</button>` 
             : '';
+
+        // Prevent negative scores visually
+        const displayScore = p.score < 0 ? 0 : p.score;
 
         card.innerHTML = `
             <img src="${p.image_url}" class="promo-img" alt="Promo">
@@ -233,31 +189,68 @@ function renderPromotions(promotions) {
                     <div id="list-${p.id}"></div>
                     ${currentUser ? `
                     <div style="display:flex; gap:5px; margin-top:5px;">
-                        <input type="text" id="input-${p.id}" placeholder="Write a comment..." style="flex:1; background:#000; border:1px solid #333; color:white; padding:5px;">
-                        <button onclick="postComment('${p.id}')" class="btn btn-primary" style="padding:5px 10px;">Send</button>
-                    </div>` : '<small>Login to comment</small>'}
+                        <input type="text" id="input-${p.id}" placeholder="Write a comment..." style="flex:1; background:rgba(0,0,0,0.5); border:1px solid #333; color:white; padding:5px; border-radius:4px;">
+                        <button onclick="postComment('${p.id}')" class="btn btn-primary" style="padding:5px 10px; font-size:0.8rem;">Send</button>
+                    </div>` : '<small style="color:#888;">Login to comment</small>'}
                 </div>
             </div>
-            <div class="vote-section">
-                <button class="vote-btn ${voteClassLike}" onclick="handleVote('${p.id}', 1)">
-                    <i class="fa-solid fa-chevron-up"></i>
-                </button>
-                <span class="score">${p.score}</span>
-                <button class="vote-btn ${voteClassDislike}" onclick="handleVote('${p.id}', -1)">
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
+            <div class="vote-section" id="vote-box-${p.id}">
+                <div class="spinner-small">...</div> 
             </div>
         `;
-        feed.appendChild(card);
+        fragment.appendChild(card);
+        loadVoteStatus(p.id, p.score);
     });
+
+    feed.appendChild(fragment);
 }
 
-// --- Global Functions (needed for inline onclicks in generated HTML) ---
-window.handleVote = async (promoId, type) => {
-    if (!currentUser) {
-        authModal.style.display = 'flex'; // Trigger modal if not logged in
-        return;
+async function loadVoteStatus(promoId, currentScore) {
+    const container = document.getElementById(`vote-box-${promoId}`);
+    let userVoteType = 0;
+
+    if (currentUser) {
+        const { data } = await supabaseClient
+            .from('votes')
+            .select('vote_type')
+            .eq('user_id', currentUser.id)
+            .eq('promotion_id', promoId)
+            .single();
+        if (data) userVoteType = data.vote_type;
     }
+
+    const activeLike = userVoteType === 1 ? 'active' : '';
+    const activeDislike = userVoteType === -1 ? 'active' : '';
+    const safeScore = currentScore < 0 ? 0 : currentScore;
+
+    container.innerHTML = `
+        <button class="vote-btn ${activeLike}" onclick="handleVote('${promoId}', 1)">
+            <i class="fa-solid fa-chevron-up"></i>
+        </button>
+        <span class="score">${safeScore}</span>
+        <button class="vote-btn ${activeDislike}" onclick="handleVote('${promoId}', -1)">
+            <i class="fa-solid fa-chevron-down"></i>
+        </button>
+    `;
+}
+
+// --- Pagination ---
+function updatePagination(totalCount) {
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    const indicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+
+    indicator.innerText = `Page ${currentPage}`;
+    
+    prevBtn.disabled = currentPage === 1;
+    // Disable Next if we are on the last page or if there are 0 items
+    nextBtn.disabled = (currentPage >= totalPages) || (totalCount === 0);
+}
+
+// --- Global Actions ---
+window.handleVote = async (promoId, type) => {
+    if (!currentUser) return authModal.style.display = 'flex';
     const { error } = await supabaseClient
         .from('votes')
         .upsert({ user_id: currentUser.id, promotion_id: promoId, vote_type: type }, { onConflict: 'user_id, promotion_id' });
