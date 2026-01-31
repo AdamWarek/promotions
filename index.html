@@ -12,21 +12,24 @@
 
     <nav>
         <div class="logo"><i class="fa-solid fa-rocket"></i> Cosmic Promo</div>
+        
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Search promotions...">
         </div>
+
         <div class="auth-buttons" id="authContainer">
-            </div>
+            <button onclick="openAuthModal()" class="btn btn-primary">Login / Sign Up</button>
+        </div>
     </nav>
 
     <div class="container">
         <aside>
             <div class="control-panel">
-                <button class="btn btn-primary" id="addPromoBtn" style="display: none;">
+                <button class="btn btn-primary" id="addPromoBtn" style="display: none; width: 100%; margin-bottom: 20px;">
                     <i class="fa-solid fa-plus"></i> Post Promotion
                 </button>
                 <h3>Sort By</h3>
-                <select id="sortSelect">
+                <select id="sortSelect" style="width: 100%; padding: 10px; border-radius: 5px; background: #15192b; color: white; border: 1px solid #333;">
                     <option value="score">Hottest (Score)</option>
                     <option value="created_at">Newest</option>
                 </select>
@@ -50,13 +53,25 @@
     <div id="authModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeAuth">&times;</span>
-            <h2 id="authTitle">Login</h2>
+            <h2 id="authTitle" style="margin-bottom: 20px;">Login</h2>
+            
             <form id="authForm">
-                <input type="email" id="email" placeholder="Email" required>
-                <input type="password" id="password" placeholder="Password" required>
-                <button type="submit" class="btn btn-primary" id="authSubmit">Login</button>
+                <div style="margin-bottom: 15px;">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="Enter email" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="authSubmit" style="width: 100%;">Login</button>
             </form>
-            <p id="authSwitch">Don't have an account? <a href="#" id="toggleAuthMode">Sign Up</a></p>
+
+            <div style="margin-top: 20px; text-align: center; border-top: 1px solid #333; padding-top: 15px;">
+                <p id="authSwitchText">Don't have an account?</p>
+                <button id="toggleAuthModeBtn" class="btn btn-outline" style="margin-top: 10px; font-size: 0.9rem;">Create New Account</button>
+            </div>
+            
             <p id="authError" class="error"></p>
         </div>
     </div>
