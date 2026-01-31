@@ -21,7 +21,7 @@
             <button id="loginBtn" class="btn btn-primary">Login / Sign Up</button>
             
             <div id="userProfile" style="display: none; align-items: center; gap: 10px;">
-                <span id="userEmail" style="color: #00d4ff; font-weight: bold;"></span>
+                <span id="userEmail" style="color: #00f3ff; font-weight: bold; text-shadow: 0 0 5px rgba(0,243,255,0.5);"></span>
                 <button id="logoutBtn" class="btn btn-outline" style="font-size: 0.8rem;">Logout</button>
             </div>
         </div>
@@ -34,7 +34,7 @@
                     <i class="fa-solid fa-plus"></i> Post Promotion
                 </button>
                 <h3>Sort By</h3>
-                <select id="sortSelect" style="width: 100%; padding: 10px; border-radius: 5px; background: #15192b; color: white; border: 1px solid #333;">
+                <select id="sortSelect" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.1);">
                     <option value="score">Hottest (Score)</option>
                     <option value="created_at">Newest</option>
                 </select>
@@ -48,9 +48,9 @@
             <div id="feed" class="feed-grid">
                 </div>
             <div class="pagination">
-                <button id="prevPage" disabled>Previous</button>
-                <span id="pageIndicator">Page 1</span>
-                <button id="nextPage">Next</button>
+                <button id="prevPage" class="btn btn-outline" disabled>Previous</button>
+                <span id="pageIndicator" style="margin: 0 15px;">Page 1</span>
+                <button id="nextPage" class="btn btn-outline">Next</button>
             </div>
         </main>
     </div>
@@ -73,7 +73,7 @@
             </form>
 
             <div style="margin-top: 20px; text-align: center; border-top: 1px solid #333; padding-top: 15px;">
-                <p id="authSwitchText">Don't have an account?</p>
+                <p id="authSwitchText" style="color:#aaa;">Don't have an account?</p>
                 <button id="toggleAuthModeBtn" class="btn btn-outline" style="margin-top: 10px; font-size: 0.9rem;">Create New Account</button>
             </div>
             
@@ -89,9 +89,9 @@
                 <input type="text" id="promoTitle" placeholder="Title" required>
                 <textarea id="promoDesc" placeholder="Description (Max 200 chars)" maxlength="200" required></textarea>
                 <input type="url" id="promoLink" placeholder="External Link (https://...)" required>
-                <label for="promoImage">Upload Image</label>
+                <label for="promoImage" style="display:block; margin-top:10px; color:#aaa;">Upload Image</label>
                 <input type="file" id="promoImage" accept="image/*" required>
-                <button type="submit" class="btn btn-primary" id="postSubmit">Launch</button>
+                <button type="submit" class="btn btn-primary" id="postSubmit" style="width:100%; margin-top:10px;">Launch</button>
             </form>
             <p id="promoError" class="error"></p>
         </div>
