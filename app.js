@@ -1,7 +1,9 @@
 // 1. Initialize Supabase
 const supabaseUrl = 'https://isfxqilovpicqwaafkzs.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzZnhxaWxvdnBpY3F3YWFma3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDk2NTQsImV4cCI6MjA4NTQyNTY1NH0.V3mTmjcp1wt-PWPMofuUvxVdZ8usO8Q2b0Y2fqQkXxw';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+// FIX: We name this 'supabaseClient' instead of 'supabase' to avoid conflict
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // State
 let currentUser = null;
@@ -25,10 +27,10 @@ const addPromoBtn = document.getElementById('addPromoBtn');
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("App initialized"); // Debug check
+    console.log("App initialized");
 
     // Check Login Status
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session?.user || null;
     updateNav();
     
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchPromotions();
 
     // Listen for Auth Changes
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log("Auth changed:", event);
         currentUser = session?.user || null;
         updateNav();
@@ -60,21 +62,24 @@ function updateNav() {
     }
 }
 
-// --- Event Listeners (The reliable way) ---
+// --- Event Listeners ---
 
 // 1. Open Auth Modal
-loginBtn.addEventListener('click', () => {
-    console.log("Login clicked");
-    authModal.style.display = 'flex';
-    isLoginMode = true;
-    updateAuthUI();
-});
+if(loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        authModal.style.display = 'flex';
+        isLoginMode = true;
+        updateAuthUI();
+    });
+}
 
 // 2. Logout
-logoutBtn.addEventListener('click', async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-});
+if(logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        window.location.reload();
+    });
+}
 
 // 3. Close Modals
 document.getElementById('closeAuth').addEventListener('click', () => {
@@ -85,9 +90,11 @@ document.getElementById('closePromo').addEventListener('click', () => {
 });
 
 // 4. Open Add Promo Modal
-addPromoBtn.addEventListener('click', () => {
-    promoModal.style.display = 'flex';
-});
+if(addPromoBtn) {
+    addPromoBtn.addEventListener('click', () => {
+        promoModal.style.display = 'flex';
+    });
+}
 
 // 5. Toggle Login/Sign Up
 toggleAuthModeBtn.addEventListener('click', (e) => {
@@ -106,9 +113,9 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 
     let error;
     if (isLoginMode) {
-        ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+        ({ error } = await supabaseClient.auth.signInWithPassword({ email, password }));
     } else {
-        ({ error } = await supabase.auth.signUp({ email, password }));
+        ({ error } = await supabaseClient.auth.signUp({ email, password }));
         if (!error) {
             alert('Sign up successful! Please check your email to confirm your account.');
             isLoginMode = true;
@@ -157,7 +164,7 @@ async function fetchPromotions() {
     const from = (currentPage - 1) * itemsPerPage;
     const to = from + itemsPerPage - 1;
 
-    let query = supabase
+    let query = supabaseClient
         .from('promotions_with_stats')
         .select('*', { count: 'exact' })
         .order(sortBy, { ascending: false })
@@ -195,7 +202,7 @@ function renderPromotions(promotions) {
         let voteClassDislike = '';
         
         if (currentUser) {
-            const { data: userVote } = await supabase
+            const { data: userVote } = await supabaseClient
                 .from('votes')
                 .select('vote_type')
                 .eq('user_id', currentUser.id)
@@ -251,7 +258,7 @@ window.handleVote = async (promoId, type) => {
         authModal.style.display = 'flex'; // Trigger modal if not logged in
         return;
     }
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('votes')
         .upsert({ user_id: currentUser.id, promotion_id: promoId, vote_type: type }, { onConflict: 'user_id, promotion_id' });
     if (!error) fetchPromotions();
@@ -259,7 +266,7 @@ window.handleVote = async (promoId, type) => {
 
 window.deletePromo = async (id) => {
     if (!confirm('Are you sure?')) return;
-    const { error } = await supabase.from('promotions').delete().eq('id', id);
+    const { error } = await supabaseClient.from('promotions').delete().eq('id', id);
     if (!error) fetchPromotions();
 };
 
@@ -271,7 +278,7 @@ window.toggleComments = async (promoId) => {
     section.style.display = 'block';
     list.innerHTML = 'Loading...';
 
-    const { data } = await supabase.from('comments').select('*').eq('promotion_id', promoId).order('created_at', { ascending: true });
+    const { data } = await supabaseClient.from('comments').select('*').eq('promotion_id', promoId).order('created_at', { ascending: true });
     list.innerHTML = '';
     data.forEach(c => {
         const isMine = currentUser && currentUser.id === c.user_id;
@@ -286,12 +293,12 @@ window.postComment = async (promoId) => {
     const input = document.getElementById(`input-${promoId}`);
     const content = input.value.trim();
     if (!content) return;
-    const { error } = await supabase.from('comments').insert({ user_id: currentUser.id, promotion_id: promoId, content: content });
+    const { error } = await supabaseClient.from('comments').insert({ user_id: currentUser.id, promotion_id: promoId, content: content });
     if (!error) { input.value = ''; window.toggleComments(promoId); window.toggleComments(promoId); }
 };
 
 window.deleteComment = async (commentId, promoId) => {
-    await supabase.from('comments').delete().eq('id', commentId);
+    await supabaseClient.from('comments').delete().eq('id', commentId);
     window.toggleComments(promoId); window.toggleComments(promoId);
 };
 
@@ -303,7 +310,7 @@ document.getElementById('promoForm').addEventListener('submit', async (e) => {
 
     const file = document.getElementById('promoImage').files[0];
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`; 
-    const { error: imgError } = await supabase.storage.from('promotion-images').upload(fileName, file);
+    const { error: imgError } = await supabaseClient.storage.from('promotion-images').upload(fileName, file);
 
     if (imgError) {
         document.getElementById('promoError').innerText = 'Image upload failed: ' + imgError.message;
@@ -311,7 +318,7 @@ document.getElementById('promoForm').addEventListener('submit', async (e) => {
     }
 
     const imgUrl = `${supabaseUrl}/storage/v1/object/public/promotion-images/${fileName}`;
-    const { error: dbError } = await supabase.from('promotions').insert({
+    const { error: dbError } = await supabaseClient.from('promotions').insert({
         title: document.getElementById('promoTitle').value,
         description: document.getElementById('promoDesc').value,
         link: document.getElementById('promoLink').value,
