@@ -17,8 +17,13 @@
             <input type="text" id="searchInput" placeholder="Search promotions...">
         </div>
 
-        <div class="auth-buttons" id="authContainer">
-            <button onclick="openAuthModal()" class="btn btn-primary">Login / Sign Up</button>
+        <div class="auth-buttons">
+            <button id="loginBtn" class="btn btn-primary">Login / Sign Up</button>
+            
+            <div id="userProfile" style="display: none; align-items: center; gap: 10px;">
+                <span id="userEmail" style="color: #00d4ff; font-weight: bold;"></span>
+                <button id="logoutBtn" class="btn btn-outline" style="font-size: 0.8rem;">Logout</button>
+            </div>
         </div>
     </nav>
 

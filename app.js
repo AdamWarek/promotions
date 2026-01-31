@@ -6,21 +6,27 @@ const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 // State
 let currentUser = null;
 let currentPage = 1;
-let isLoginMode = true; // Track if we are signing in or signing up
+let isLoginMode = true; 
 const itemsPerPage = 5;
 
 // DOM Elements
-const authContainer = document.getElementById('authContainer');
-const feed = document.getElementById('feed');
-const loading = document.getElementById('loading');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const userProfile = document.getElementById('userProfile');
+const userEmailSpan = document.getElementById('userEmail');
 const authModal = document.getElementById('authModal');
 const promoModal = document.getElementById('promoModal');
+const feed = document.getElementById('feed');
+const loading = document.getElementById('loading');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 const toggleAuthModeBtn = document.getElementById('toggleAuthModeBtn');
+const addPromoBtn = document.getElementById('addPromoBtn');
 
 // --- Initialization ---
-window.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("App initialized"); // Debug check
+
     // Check Login Status
     const { data: { session } } = await supabase.auth.getSession();
     currentUser = session?.user || null;
@@ -31,33 +37,118 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Listen for Auth Changes
     supabase.auth.onAuthStateChange((event, session) => {
+        console.log("Auth changed:", event);
         currentUser = session?.user || null;
         updateNav();
         fetchPromotions(); 
     });
 });
 
-// --- Navigation & Auth UI ---
+// --- UI Logic ---
 function updateNav() {
     if (currentUser) {
-        // User is Logged In
-        authContainer.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="color:var(--accent); font-weight:bold;">${currentUser.email.split('@')[0]}</span>
-                <button onclick="handleLogout()" class="btn btn-outline" style="font-size:0.8rem;">Logout</button>
-            </div>
-        `;
-        document.getElementById('addPromoBtn').style.display = 'block';
+        // Show Profile, Hide Login Button
+        loginBtn.style.display = 'none';
+        userProfile.style.display = 'flex';
+        userEmailSpan.innerText = currentUser.email.split('@')[0];
+        addPromoBtn.style.display = 'block';
     } else {
-        // User is Logged Out
-        authContainer.innerHTML = `
-            <button onclick="openAuthModal()" class="btn btn-primary">Login / Sign Up</button>
-        `;
-        document.getElementById('addPromoBtn').style.display = 'none';
+        // Show Login Button, Hide Profile
+        loginBtn.style.display = 'block';
+        userProfile.style.display = 'none';
+        addPromoBtn.style.display = 'none';
     }
 }
 
-// --- Data Fetching ---
+// --- Event Listeners (The reliable way) ---
+
+// 1. Open Auth Modal
+loginBtn.addEventListener('click', () => {
+    console.log("Login clicked");
+    authModal.style.display = 'flex';
+    isLoginMode = true;
+    updateAuthUI();
+});
+
+// 2. Logout
+logoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+});
+
+// 3. Close Modals
+document.getElementById('closeAuth').addEventListener('click', () => {
+    authModal.style.display = 'none';
+});
+document.getElementById('closePromo').addEventListener('click', () => {
+    promoModal.style.display = 'none';
+});
+
+// 4. Open Add Promo Modal
+addPromoBtn.addEventListener('click', () => {
+    promoModal.style.display = 'flex';
+});
+
+// 5. Toggle Login/Sign Up
+toggleAuthModeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    isLoginMode = !isLoginMode;
+    updateAuthUI();
+});
+
+// 6. Handle Auth Form Submit
+document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('authError');
+    errorEl.innerText = 'Processing...';
+
+    let error;
+    if (isLoginMode) {
+        ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+    } else {
+        ({ error } = await supabase.auth.signUp({ email, password }));
+        if (!error) {
+            alert('Sign up successful! Please check your email to confirm your account.');
+            isLoginMode = true;
+            updateAuthUI();
+            return;
+        }
+    }
+
+    if (error) {
+        errorEl.innerText = error.message;
+    } else {
+        authModal.style.display = 'none';
+        errorEl.innerText = '';
+        document.getElementById('authForm').reset();
+    }
+});
+
+function updateAuthUI() {
+    const title = document.getElementById('authTitle');
+    const submitBtn = document.getElementById('authSubmit');
+    const switchText = document.getElementById('authSwitchText');
+    const errorEl = document.getElementById('authError');
+
+    errorEl.innerText = ''; 
+
+    if (isLoginMode) {
+        title.innerText = 'Login';
+        submitBtn.innerText = 'Login';
+        switchText.innerText = "Don't have an account?";
+        toggleAuthModeBtn.innerText = "Create New Account";
+    } else {
+        title.innerText = 'Sign Up';
+        submitBtn.innerText = 'Sign Up';
+        switchText.innerText = "Already have an account?";
+        toggleAuthModeBtn.innerText = "Back to Login";
+    }
+}
+
+// --- Data & Logic ---
+
 async function fetchPromotions() {
     loading.style.display = 'block';
     feed.innerHTML = '';
@@ -90,9 +181,8 @@ async function fetchPromotions() {
     updatePagination(count);
 }
 
-// --- Rendering ---
 function renderPromotions(promotions) {
-    if (promotions.length === 0) {
+    if (!promotions || promotions.length === 0) {
         feed.innerHTML = '<div style="text-align:center; padding:2rem;">No promotions found in this sector.</div>';
         return;
     }
@@ -155,220 +245,96 @@ function renderPromotions(promotions) {
     });
 }
 
-// --- Actions ---
-async function handleVote(promoId, type) {
-    if (!currentUser) return openAuthModal();
-
-    const { error } = await supabase
-        .from('votes')
-        .upsert({ 
-            user_id: currentUser.id, 
-            promotion_id: promoId, 
-            vote_type: type 
-        }, { onConflict: 'user_id, promotion_id' });
-
-    if (!error) fetchPromotions();
-}
-
-async function deletePromo(id) {
-    if (!confirm('Are you sure you want to delete this promotion?')) return;
-    const { error } = await supabase.from('promotions').delete().eq('id', id);
-    if (!error) fetchPromotions();
-}
-
-// Comments Logic
-async function toggleComments(promoId) {
-    const section = document.getElementById(`comments-${promoId}`);
-    const list = document.getElementById(`list-${promoId}`);
-    
-    if (section.style.display === 'block') {
-        section.style.display = 'none';
+// --- Global Functions (needed for inline onclicks in generated HTML) ---
+window.handleVote = async (promoId, type) => {
+    if (!currentUser) {
+        authModal.style.display = 'flex'; // Trigger modal if not logged in
         return;
     }
+    const { error } = await supabase
+        .from('votes')
+        .upsert({ user_id: currentUser.id, promotion_id: promoId, vote_type: type }, { onConflict: 'user_id, promotion_id' });
+    if (!error) fetchPromotions();
+};
+
+window.deletePromo = async (id) => {
+    if (!confirm('Are you sure?')) return;
+    const { error } = await supabase.from('promotions').delete().eq('id', id);
+    if (!error) fetchPromotions();
+};
+
+window.toggleComments = async (promoId) => {
+    const section = document.getElementById(`comments-${promoId}`);
+    const list = document.getElementById(`list-${promoId}`);
+    if (section.style.display === 'block') { section.style.display = 'none'; return; }
     
     section.style.display = 'block';
     list.innerHTML = 'Loading...';
 
-    const { data } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('promotion_id', promoId)
-        .order('created_at', { ascending: true });
-
+    const { data } = await supabase.from('comments').select('*').eq('promotion_id', promoId).order('created_at', { ascending: true });
     list.innerHTML = '';
     data.forEach(c => {
         const isMine = currentUser && currentUser.id === c.user_id;
         const div = document.createElement('div');
         div.className = 'comment';
-        div.innerHTML = `
-            ${c.content}
-            ${isMine ? `<i class="fa-solid fa-trash delete-btn" onclick="deleteComment('${c.id}', '${promoId}')"></i>` : ''}
-        `;
+        div.innerHTML = `${c.content} ${isMine ? `<i class="fa-solid fa-trash delete-btn" onclick="deleteComment('${c.id}', '${promoId}')"></i>` : ''}`;
         list.appendChild(div);
     });
-}
+};
 
-async function postComment(promoId) {
+window.postComment = async (promoId) => {
     const input = document.getElementById(`input-${promoId}`);
     const content = input.value.trim();
     if (!content) return;
+    const { error } = await supabase.from('comments').insert({ user_id: currentUser.id, promotion_id: promoId, content: content });
+    if (!error) { input.value = ''; window.toggleComments(promoId); window.toggleComments(promoId); }
+};
 
-    const { error } = await supabase.from('comments').insert({
-        user_id: currentUser.id,
-        promotion_id: promoId,
-        content: content
-    });
-
-    if (!error) {
-        input.value = '';
-        toggleComments(promoId);
-        toggleComments(promoId);
-    }
-}
-
-async function deleteComment(commentId, promoId) {
+window.deleteComment = async (commentId, promoId) => {
     await supabase.from('comments').delete().eq('id', commentId);
-    toggleComments(promoId);
-    toggleComments(promoId);
-}
-
-// --- Auth & Modals Logic ---
-
-// Open Modal
-function openAuthModal() { 
-    authModal.style.display = 'flex'; 
-    isLoginMode = true;
-    updateAuthUI();
-}
-
-// Close Modals
-document.getElementById('closePromo').onclick = () => promoModal.style.display = 'none';
-document.getElementById('closeAuth').onclick = () => authModal.style.display = 'none';
-
-// Toggle between Login and Sign Up
-toggleAuthModeBtn.onclick = (e) => {
-    e.preventDefault();
-    isLoginMode = !isLoginMode;
-    updateAuthUI();
+    window.toggleComments(promoId); window.toggleComments(promoId);
 };
 
-function updateAuthUI() {
-    const title = document.getElementById('authTitle');
-    const submitBtn = document.getElementById('authSubmit');
-    const switchText = document.getElementById('authSwitchText');
-    const errorEl = document.getElementById('authError');
-
-    errorEl.innerText = ''; // clear errors
-
-    if (isLoginMode) {
-        title.innerText = 'Login';
-        submitBtn.innerText = 'Login';
-        switchText.innerText = "Don't have an account?";
-        toggleAuthModeBtn.innerText = "Create New Account";
-    } else {
-        title.innerText = 'Sign Up';
-        submitBtn.innerText = 'Sign Up';
-        switchText.innerText = "Already have an account?";
-        toggleAuthModeBtn.innerText = "Back to Login";
-    }
-}
-
-// Handle Auth Submit
-document.getElementById('authForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const errorEl = document.getElementById('authError');
-    errorEl.innerText = 'Processing...';
-
-    let error;
-    
-    if (isLoginMode) {
-        // LOGIN
-        ({ error } = await supabase.auth.signInWithPassword({ email, password }));
-    } else {
-        // SIGN UP
-        ({ error } = await supabase.auth.signUp({ email, password }));
-        if (!error) {
-            alert('Sign up successful! Please check your email to confirm your account.');
-            // Switch back to login mode so they can login after confirming
-            isLoginMode = true;
-            updateAuthUI();
-            return;
-        }
-    }
-
-    if (error) {
-        errorEl.innerText = error.message;
-    } else {
-        authModal.style.display = 'none';
-        errorEl.innerText = '';
-        document.getElementById('authForm').reset();
-    }
-};
-
-async function handleLogout() { 
-    await supabase.auth.signOut(); 
-}
-
-// --- Post Promotion Logic ---
-document.getElementById('promoForm').onsubmit = async (e) => {
+// --- Promo Post Logic ---
+document.getElementById('promoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('postSubmit');
-    btn.disabled = true;
-    btn.innerText = 'Uploading...';
+    btn.disabled = true; btn.innerText = 'Uploading...';
 
     const file = document.getElementById('promoImage').files[0];
-    const title = document.getElementById('promoTitle').value;
-    const desc = document.getElementById('promoDesc').value;
-    const link = document.getElementById('promoLink').value;
-
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`; // clean filename
-    const { data: imgData, error: imgError } = await supabase.storage
-        .from('promotion-images')
-        .upload(fileName, file);
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`; 
+    const { error: imgError } = await supabase.storage.from('promotion-images').upload(fileName, file);
 
     if (imgError) {
         document.getElementById('promoError').innerText = 'Image upload failed: ' + imgError.message;
-        btn.disabled = false;
-        btn.innerText = 'Launch';
-        return;
+        btn.disabled = false; return;
     }
 
     const imgUrl = `${supabaseUrl}/storage/v1/object/public/promotion-images/${fileName}`;
-
     const { error: dbError } = await supabase.from('promotions').insert({
-        title,
-        description: desc,
-        link,
+        title: document.getElementById('promoTitle').value,
+        description: document.getElementById('promoDesc').value,
+        link: document.getElementById('promoLink').value,
         image_url: imgUrl,
         user_id: currentUser.id
     });
 
-    if (dbError) {
-        document.getElementById('promoError').innerText = dbError.message;
-    } else {
+    if (dbError) document.getElementById('promoError').innerText = dbError.message;
+    else {
         promoModal.style.display = 'none';
         document.getElementById('promoForm').reset();
         fetchPromotions();
     }
-    btn.disabled = false;
-    btn.innerText = 'Launch';
-};
+    btn.disabled = false; btn.innerText = 'Launch';
+});
 
-// Search & Sort Listeners
+// Search/Pagination Listeners
 searchInput.addEventListener('input', () => { currentPage = 1; fetchPromotions(); });
 sortSelect.addEventListener('change', () => { currentPage = 1; fetchPromotions(); });
-document.getElementById('prevPage').onclick = () => { if (currentPage > 1) { currentPage--; fetchPromotions(); }};
-document.getElementById('nextPage').onclick = () => { currentPage++; fetchPromotions(); };
+document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; fetchPromotions(); }});
+document.getElementById('nextPage').addEventListener('click', () => { currentPage++; fetchPromotions(); });
 
-function updatePagination(totalCount) {
-    document.getElementById('pageIndicator').innerText = `Page ${currentPage}`;
-    document.getElementById('prevPage').disabled = currentPage === 1;
-    document.getElementById('nextPage').disabled = (currentPage * itemsPerPage) >= totalCount;
-}
-
-// Close modals on outside click
+// Close on outside click
 window.onclick = (e) => {
     if (e.target == authModal) authModal.style.display = "none";
     if (e.target == promoModal) promoModal.style.display = "none";
