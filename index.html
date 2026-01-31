@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Promo | Aggregator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo"><i class="fa-solid fa-rocket"></i> Cosmic Promo</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search promotions...">
+        </div>
+        <div class="auth-buttons" id="authContainer">
+            </div>
+    </nav>
+
+    <div class="container">
+        <aside>
+            <div class="control-panel">
+                <button class="btn btn-primary" id="addPromoBtn" style="display: none;">
+                    <i class="fa-solid fa-plus"></i> Post Promotion
+                </button>
+                <h3>Sort By</h3>
+                <select id="sortSelect">
+                    <option value="score">Hottest (Score)</option>
+                    <option value="created_at">Newest</option>
+                </select>
+            </div>
+        </aside>
+
+        <main>
+            <div id="loading" class="loading">
+                <i class="fa-solid fa-spinner fa-spin"></i> Scanning Deep Space...
+            </div>
+            <div id="feed" class="feed-grid">
+                </div>
+            <div class="pagination">
+                <button id="prevPage" disabled>Previous</button>
+                <span id="pageIndicator">Page 1</span>
+                <button id="nextPage">Next</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAuth">&times;</span>
+            <h2 id="authTitle">Login</h2>
+            <form id="authForm">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary" id="authSubmit">Login</button>
+            </form>
+            <p id="authSwitch">Don't have an account? <a href="#" id="toggleAuthMode">Sign Up</a></p>
+            <p id="authError" class="error"></p>
+        </div>
+    </div>
+
+    <div id="promoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closePromo">&times;</span>
+            <h2>Post New Promotion</h2>
+            <form id="promoForm">
+                <input type="text" id="promoTitle" placeholder="Title" required>
+                <textarea id="promoDesc" placeholder="Description (Max 200 chars)" maxlength="200" required></textarea>
+                <input type="url" id="promoLink" placeholder="External Link (https://...)" required>
+                <label for="promoImage">Upload Image</label>
+                <input type="file" id="promoImage" accept="image/*" required>
+                <button type="submit" class="btn btn-primary" id="postSubmit">Launch</button>
+            </form>
+            <p id="promoError" class="error"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
